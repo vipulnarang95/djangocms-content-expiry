@@ -1,0 +1,4 @@
+{
+    "package-name": "djangocms-content-expiry",
+    "installed-apps": ["djangocms_content_expiry"]
+}
