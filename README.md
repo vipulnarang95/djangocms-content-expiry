@@ -4,7 +4,7 @@
 
 django CMS Content Expiry requires that you have a django CMS 4.0 (or higher) project already running and set up.
 
-## To install
+## Installation
 
 Run:
 
