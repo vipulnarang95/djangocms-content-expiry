@@ -5,7 +5,7 @@ import djangocms_content_expiry
 
 INSTALL_REQUIREMENTS = [
     "Django>=1.11,<3.0",
-    #"django-cms",
+    "django-cms",
 ]
 
 TEST_REQUIREMENTS = [
