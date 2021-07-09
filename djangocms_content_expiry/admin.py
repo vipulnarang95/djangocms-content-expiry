@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import ContentExpiry
+
+
+@admin.register(ContentExpiry)
+class ContentExpiryAdmin(admin.ModelAdmin):
+    pass
