@@ -5,5 +5,6 @@ class BasicTest(CMSTestCase):
     """
     Basic test to ensure test suit runs
     """
+
     def test_fail(self):
         self.assertTrue(False)

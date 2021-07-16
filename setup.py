@@ -31,12 +31,12 @@ setup(
     author="Eliga Services",
     test_suite="test_settings.run",
     author_email="enquiries@eliga.services",
-    url="",
+    url="https://github.com/EligaServices/djangocms-content-expiry",
     license="BSD",
     zip_safe=False,
     tests_require=TEST_REQUIREMENTS,
     dependency_links=[
         "http://github.com/divio/django-cms/tarball/release/4.0.x#egg=django-cms-4.0.0",
-        "https://github.com/divio/djangocms-versioning/tarball/492d01c974e40b007b71e2a7e961a9019a0d5ac4#egg=djangocms-versioning"
-    ]
+        "https://github.com/divio/djangocms-versioning/tarball/492d01c974e40b007b71e2a7e961a9019a0d5ac4#egg=djangocms-versioning",
+    ],
 )
