@@ -1,0 +1,37 @@
+name: django CMS Content Expiry test.yml
+
+on: [pull_request]
+
+jobs:
+  database-sqlite:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ 3.8 ]  # latest release minus two
+        requirements-file: [
+          requirements.txt,
+        ]
+        os: [
+          ubuntu-20.04,
+        ]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        sudo apt install gettext gcc -y
+        python -m pip install --upgrade pip
+        pip install pytest
+        pip install -r tests/requirements.txt
+        python setup.py install
+    - name: Test with python test runner
+      run: |
+        python setup.py test
+      env:
+        DATABASE_URL: sqlite://localhost/testdb.sqlite
