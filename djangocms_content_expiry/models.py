@@ -1,18 +1,24 @@
-from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-import datetime
+from djangocms_versioning.models import Version
 
 
 class ContentExpiry(models.Model):
-    pass
-
-
-class ContentExpiryContent(models.Model):
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    from_expiry_date = models.DateField(_("From Expiry Date"), default=datetime.date.today)
-    to_expiry_date = models.DateField(_("To Expiry Date"), default=datetime.date.today)
+    created = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        verbose_name=_('expired by')
+    )
+    version = models.OneToOneField(
+        Version,
+        on_delete=models.CASCADE,
+        verbose_name=_('version')
+    )
+    expires = models.DateTimeField(_("expiry date"))
 
     class Meta:
         verbose_name = _("Content Expiry")
+        verbose_name_plural = _("Content Expiry")

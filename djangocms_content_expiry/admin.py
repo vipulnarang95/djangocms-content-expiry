@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from .models import ContentExpiryContent
+from .models import ContentExpiry
 
 
-@admin.register(ContentExpiryContent)
+@admin.register(ContentExpiry)
 class ContentExpiryAdmin(admin.ModelAdmin):
     pass
