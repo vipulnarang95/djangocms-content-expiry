@@ -15,6 +15,9 @@ pyenchant
 django-app-helper
 mock>=2.0.0
 django-formtools
+factory-boy
+# Custom date range filter
+django-admin-rangefilter
 
 # Unreleased django-cms 4.0 compatible packages
 https://github.com/divio/django-cms/tarball/66c70394c9e144281a0b47d93e3784d06318acf9#egg=django-cms

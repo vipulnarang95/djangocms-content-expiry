@@ -1,0 +1,19 @@
+#changelist-filter a {
+    display: inline-block !important;
+    overflow-x: visible !important;
+}
+
+.admindatefilter a {
+    position: relative !important;
+}
+
+.calendar-shortcuts a:first-child, span.datetimeshortcuts a:first-child {
+    margin-top: 0 !important;
+}
+
+.admindatefilter .datetimeshortcuts {
+        font-size: 0!important;
+        float: right!important;
+        position: relative!important;
+        padding-top: 0px!important;
+}
