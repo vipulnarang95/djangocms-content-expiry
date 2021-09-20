@@ -4,14 +4,8 @@ import datetime
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
 
 from djangocms_content_expiry.models import ContentExpiry
-from djangocms_content_expiry.test_utils.factories import (
-    ContentExpiryFactory,
-    UserFactory,
-)
-from djangocms_content_expiry.test_utils.polls.factories import (
-    PollContentExpiryFactory,
-    PollContentWithVersionFactory,
-)
+from djangocms_content_expiry.test_utils.factories import UserFactory
+from djangocms_content_expiry.test_utils.polls.factories import PollContentExpiryFactory
 
 
 class ContentExpiryChangelistTestCase(CMSTestCase):
@@ -47,7 +41,6 @@ class ContentExpiryChangelistTestCase(CMSTestCase):
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
-
     def test_expired_filter_default_setting(self):
         """
         Default filter is to display all published content on page load
@@ -161,8 +154,7 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
         """
         delta = datetime.timedelta(days=31)
         expire = datetime.datetime.now() + delta
-        poll_content = PollContentWithVersionFactory(language="en")
-        ContentExpiryFactory(version=poll_content.versions.first(), expires=expire)
+        PollContentExpiryFactory(expires=expire, version__state=PUBLISHED)
 
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(self.get_admin_url(ContentExpiry, "changelist"))
@@ -173,7 +165,6 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
 
 
 class ContentExpiryAuthorFilterTestCase(CMSTestCase):
-
     def test_author_filter(self):
         """
         Author filter should only show selected author's results
@@ -245,7 +236,6 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
 
 
 class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
-
     def test_versions_filters_default(self):
         """
         The default should be to show published versions by default as they are what

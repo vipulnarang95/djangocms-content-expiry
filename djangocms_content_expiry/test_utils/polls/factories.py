@@ -1,5 +1,6 @@
 import factory
 from djangocms_versioning.models import Version
+from djangocms_versioning.signals import post_version_operation, pre_version_operation
 from factory.fuzzy import FuzzyChoice, FuzzyText
 
 from djangocms_content_expiry.models import ContentExpiry
@@ -45,6 +46,7 @@ class PollContentWithVersionFactory(PollContentFactory):
         PollVersionFactory(content=self, **kwargs)
 
 
+@factory.django.mute_signals(pre_version_operation, post_version_operation)
 class PollContentExpiryFactory(factory.django.DjangoModelFactory):
     created_by = factory.SubFactory(UserFactory)
     version = factory.SubFactory(PollVersionFactory)
