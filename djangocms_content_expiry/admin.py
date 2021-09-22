@@ -2,39 +2,41 @@ from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 
-import datetime
-from rangefilter.filters import DateRangeFilter
-
-from .filters import AuthorFilter, ContentTypeFilter, VersionStateFilter
+from .filters import (
+    AuthorFilter,
+    ContentExpiryDateRangeFilter,
+    ContentTypeFilter,
+    VersionStateFilter,
+)
+from .forms import ContentExpiryForm
+from .helpers import get_rangefilter_expires_default
 from .models import ContentExpiry
 
 
 @admin.register(ContentExpiry)
 class ContentExpiryAdmin(admin.ModelAdmin):
     list_display = ['title', 'content_type', 'expires', 'version_state', 'version_author']
-    # Disable automatically linking to the Expiry record
-    list_display_links = None
-    list_filter = (ContentTypeFilter, ('expires', DateRangeFilter), VersionStateFilter, AuthorFilter)
+    list_filter = (ContentTypeFilter, ('expires', ContentExpiryDateRangeFilter), VersionStateFilter, AuthorFilter)
+    form = ContentExpiryForm
 
     class Media:
         css = {
-            'all': ('css/date_filter.css',)
+            'all': ('djangocms_content_expiry/css/date_filter.css',)
         }
 
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
+    def has_add_permission(self, *args, **kwargs):
+        # Entries are added automatically
+        return False
 
-        if 'expires__range' not in request.path:
-            default_gte, default_lte = self.get_rangefilter_expires_default(request)
-            queryset = queryset.filter(expires__range=(default_gte, default_lte))
-        return queryset
+    def has_delete_permission(self, *args, **kwargs):
+        # Deletion should never be possible, the only way that a
+        # content expiry record could be deleted is via versioning.
+        return False
 
-    def get_rangefilter_expires_default(self, request):
-        start_date = datetime.datetime.now() - datetime.timedelta(30)
-        end_date = datetime.datetime.now()
-        return start_date, end_date
+    def get_rangefilter_expires_default(self, *args, **kwargs):
+        return get_rangefilter_expires_default()
 
-    def get_rangefilter_expires_title(self, request, field_path):
+    def get_rangefilter_expires_title(self, *args, **kwargs):
         return _("By Expiry Date Range")
 
     def title(self, obj):

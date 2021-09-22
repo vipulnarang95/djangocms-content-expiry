@@ -28,10 +28,13 @@ Run::
 to perform the application's database migrations.
 
 
-=====
-Usage
-=====
 
+Configuration
+=============
+
+The default Content Expiry changelist is filtered by a date range which is 30 days by default. This can be changed by setting a value in days as an integer in settings.py::
+
+    CMS_CONTENT_EXPIRY_DEFAULT_RANGEFILTER_DELTA=60
 
 
 Testing
@@ -41,20 +44,3 @@ To run all the tests the only thing you need to do is run
 
     pip install -r tests/requirements.txt
     python setup.py test
-
-
-Documentation
-=============
-
-We maintain documentation under the ``docs`` folder using rst format.
-
-To generate the HTML documentation you will need to install ``sphinx`` (``pip install sphinx``) and ``graphviz`` (as per
-your operating system's package management system). You can then generate the docs using the following command:
-
-Run::
-
-    cd docs/
-    make html
-
-This should generate all html files from rst documents under `docs/_build` folder, which can be browsed.
-

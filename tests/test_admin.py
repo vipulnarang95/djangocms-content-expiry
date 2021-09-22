@@ -1,46 +1,99 @@
+import datetime
+from unittest.mock import patch
+
 from cms.test_utils.testcases import CMSTestCase
 
-import datetime
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
+from freezegun import freeze_time
 
 from djangocms_content_expiry.models import ContentExpiry
 from djangocms_content_expiry.test_utils.factories import UserFactory
 from djangocms_content_expiry.test_utils.polls.factories import PollContentExpiryFactory
 
 
-class ContentExpiryChangelistTestCase(CMSTestCase):
-    def test_changelist_form_fields(self):
+class ContentExpiryAdminViewsPermissionsTestCase(CMSTestCase):
+
+    def setUp(self):
+        self.content_expiry = PollContentExpiryFactory()
+
+    def test_add_permissions(self):
         """
-        Ensure that the form fields present match the model fields"
+        Adding a content expiry record via the admin is not permitted
         """
+        endpoint = self.get_admin_url(ContentExpiry, "add")
+
         with self.login_user_context(self.get_superuser()):
-            response = self.client.get(self.get_admin_url(ContentExpiry, "add"))
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_change_permissions(self):
+        """
+        Changing a content expiry record via the admin is permitted
+        """
+        endpoint = self.get_admin_url(ContentExpiry, "change",  self.content_expiry.pk)
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_permissions(self):
+        """
+        Deleting a content expiry record via the admin is not permitted
+        """
+        endpoint = self.get_admin_url(ContentExpiry, "delete",  self.content_expiry.pk)
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 403)
+
+
+class ContentExpiryChangeFormTestCase(CMSTestCase):
+    def test_change_form_fields(self):
+        """
+        Ensure that the form fields present match the model fields
+        """
+        content_expiry = PollContentExpiryFactory()
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
 
         self.assertEqual(response.status_code, 200)
 
         decoded_response = response.content.decode("utf-8")
 
-        self.assertIn('<select name="created_by" required id="id_created_by">', decoded_response)
-        self.assertIn('<select name="version" required id="id_version">', decoded_response)
-        self.assertIn('<input type="text" name="expires_0" class="vDateField" size="10" required id="id_expires_0">',
-                      decoded_response)
+        self.assertIn('name="created_by"', decoded_response)
+        self.assertIn('name="version"', decoded_response)
+        self.assertIn('name="expires_0"', decoded_response)
+        self.assertIn('name="expires_1"', decoded_response)
+
+
+class ContentExpiryChangelistTestCase(CMSTestCase):
 
     def test_change_fields(self):
         """
         Ensure the change list presents list display items from the admin file
         """
+        endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
         with self.login_user_context(self.get_superuser()):
-            response = self.client.get(self.get_admin_url(ContentExpiry, "changelist"))
+            response = self.client.get(endpoint)
 
         context = response.context_data['cl'].list_display
-        self.assertEqual('title', context[1])
-        self.assertEqual('content_type', context[2])
-        self.assertEqual('expires', context[3])
-        self.assertEqual('version_state', context[4])
-        self.assertEqual('version_author', context[5])
+        self.assertTrue('title' in context)
+        self.assertTrue('content_type' in context)
+        self.assertTrue('expires' in context)
+        self.assertTrue('version_state' in context)
+        self.assertTrue('version_author' in context)
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
+
+    @freeze_time("2200-01-14")
+    @patch('djangocms_content_expiry.helpers.DEFAULT_RANGEFILTER_DELTA', 15)
     def test_expired_filter_default_setting(self):
         """
         Default filter is to display all published content on page load
@@ -55,51 +108,53 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
         # Record that is set to expire today
         expire_at_2 = from_date
         poll_content_2 = PollContentExpiryFactory(expires=expire_at_2, version__state=PUBLISHED)
-        version_2 = poll_content_2.version
 
         # Record that is set to expire tomorrow
         delta_3 = datetime.timedelta(days=1)
         expire_at_3 = from_date - delta_3
         poll_content_3 = PollContentExpiryFactory(expires=expire_at_3, version__state=PUBLISHED)
-        version_3 = poll_content_3.version
 
-        # Record that is set to expire in 29 days
-        delta_4 = datetime.timedelta(days=29)
+        # Record that is set to expire in 1 day before the end date
+        delta_4 = datetime.timedelta(days=14)
         expire_at_4 = from_date - delta_4
         poll_content_4 = PollContentExpiryFactory(expires=expire_at_4, version__state=PUBLISHED)
-        version_4 = poll_content_4.version
 
-        # Record that is set to expire in 30 days
-        delta_5 = datetime.timedelta(days=30)
+        # Record that is set to expire the same day as the end date
+        delta_5 = datetime.timedelta(days=15)
         expire_at_5 = from_date - delta_5
         poll_content_5 = PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
-        poll_content_5.version
 
-        # Record that is set to expire in 31 days
-        delta_6 = datetime.timedelta(days=31)
-        expire_at_6 = from_date + delta_6
+        # Record that is set to expire a day after the end date
+        delta_6 = datetime.timedelta(days=16)
+        expire_at_6 = from_date - delta_6
         PollContentExpiryFactory(expires=expire_at_6, version__state=PUBLISHED)
 
         with self.login_user_context(self.get_superuser()):
             admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
             response = self.client.get(admin_endpoint)
 
-        # Only contents in the 30 date range should be returned
+        # Only contents in the date range should be returned
         self.assertQuerysetEqual(
             response.context["cl"].queryset,
-            [version_2.pk, version_3.pk,
-             version_4.pk],
+            [poll_content_2.version.pk,
+             poll_content_3.version.pk,
+             poll_content_4.version.pk,
+             poll_content_5.version.pk],
             transform=lambda x: x.pk,
             ordered=False,
         )
 
+    @freeze_time("2200-01-14")
+    @patch('djangocms_content_expiry.helpers.DEFAULT_RANGEFILTER_DELTA', 15)
     def test_expired_filter_setting_expired_at_range_boundaries(self):
         """
-        Check the boundaries of the Expired by date range filter. The dates are
-        set to check that only records due to expire are shown with a filter value set at 30 days
+        The boundaries of the Expired by date range filter are
+        set to check that only records due to expire are shown with a filter value set at a
+        different range to the setting DEFAULT_RANGEFILTER_DELTA. The reason the dates
+        need to differ ensure that we not just re-testing the default setting.
         """
         from_date = datetime.datetime.now()
-        to_date = from_date - datetime.timedelta(days=30)
+        to_date = from_date - datetime.timedelta(days=110)
 
         # Record that is expired by 1 day
         delta_1 = datetime.timedelta(days=1)
@@ -109,27 +164,24 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
         # Record that is set to expire today
         expire_at_2 = from_date
         poll_content_2 = PollContentExpiryFactory(expires=expire_at_2, version__state=PUBLISHED)
-        version_2 = poll_content_2.version
 
         # Record that is set to expire tomorrow
         delta_3 = datetime.timedelta(days=1)
         expire_at_3 = from_date - delta_3
         poll_content_3 = PollContentExpiryFactory(expires=expire_at_3, version__state=PUBLISHED)
-        version_3 = poll_content_3.version
 
-        # Record that is set to expire in 29 days
-        delta_4 = datetime.timedelta(days=29)
+        # Record that is set to expire in 1 day before the end date
+        delta_4 = datetime.timedelta(days=109)
         expire_at_4 = from_date - delta_4
         poll_content_4 = PollContentExpiryFactory(expires=expire_at_4, version__state=PUBLISHED)
-        version_4 = poll_content_4.version
 
-        # Record that is set to expire in 30 days
-        delta_5 = datetime.timedelta(days=30)
+        # Record that is set to expire the same day as the end date
+        delta_5 = datetime.timedelta(days=110)
         expire_at_5 = from_date - delta_5
-        PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
+        poll_content_5 = PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
 
-        # Record that is set to expire in 31 days
-        delta_6 = datetime.timedelta(days=31)
+        # Record that is set to expire a day after the end date
+        delta_6 = datetime.timedelta(days=111)
         expire_at_6 = from_date - delta_6
         PollContentExpiryFactory(expires=expire_at_6, version__state=PUBLISHED)
 
@@ -137,13 +189,14 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
             url_date_range = f"?expires__range__gte={to_date.date()}&expires__range__lte={from_date.date()}"
             admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
             response = self.client.get(admin_endpoint + url_date_range)
-        # content_expiry_1, content_expiry_5, content_expiry_6 are not shown because they are outside of the set
-        # boundary range, content_expiry_1 is before the start and content_expiry_5 and content_expiry_6 is
-        # outside of the range.
+
+        # Only contents in the date range should be returned
         self.assertQuerysetEqual(
             response.context["cl"].queryset,
-            [version_2.pk, version_3.pk,
-             version_4.pk],
+            [poll_content_2.version.pk,
+             poll_content_3.version.pk,
+             poll_content_4.version.pk,
+             poll_content_5.version.pk],
             transform=lambda x: x.pk,
             ordered=False,
         )

@@ -4,6 +4,7 @@ HELPER_SETTINGS = {
         "djangocms_content_expiry",
         "djangocms_content_expiry.test_utils.polls",
         "djangocms_versioning",
+        "djangocms_moderation",
         "rangefilter"
     ],
     "MIGRATION_MODULES": {
@@ -11,6 +12,7 @@ HELPER_SETTINGS = {
         "cms": None,
         "menus": None,
         "djangocms_versioning": None,
+        "djangocms_moderation": None,
         "djangocms_content_expiry": None,
     },
     "CMS_PERMISSION": True,

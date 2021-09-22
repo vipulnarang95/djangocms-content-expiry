@@ -1,7 +1,8 @@
+from collections import OrderedDict
+
 from cms.app_base import CMSAppConfig
 from cms.utils.i18n import get_language_tuple
 
-from collections import OrderedDict
 from djangocms_versioning.datastructures import VersionableItem, default_copy
 
 from .models import PollContent

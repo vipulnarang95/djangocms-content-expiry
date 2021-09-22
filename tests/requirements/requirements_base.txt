@@ -5,6 +5,7 @@ django-treebeard>=4.3
 argparse
 dj-database-url
 djangocms-admin-style>=1.5
+django-admin-rangefilter
 django-sekizai>=0.7
 django-classy-tags>=0.7.2
 iptools
@@ -16,10 +17,10 @@ django-app-helper
 mock>=2.0.0
 django-formtools
 factory-boy
-# Custom date range filter
-django-admin-rangefilter
+freezegun
 
 # Unreleased django-cms 4.0 compatible packages
-https://github.com/divio/django-cms/tarball/66c70394c9e144281a0b47d93e3784d06318acf9#egg=django-cms
-https://github.com/divio/djangocms-text-ckeditor/archive/support/4.0.x.zip
-https://github.com/divio/djangocms-versioning/tarball/492d01c974e40b007b71e2a7e961a9019a0d5ac4#egg=djangocms-versioning
+https://github.com/divio/django-cms/tarball/release/4.0.x#egg=django-cms
+https://github.com/divio/djangocms-text-ckeditor/tarball/support/4.0.x#egg=djangocms-text-ckeditor
+https://github.com/divio/djangocms-versioning/tarball/master#egg=djangocms-versioning
+https://github.com/django-cms/djangocms-moderation/tarball/release/1.0.x#egg=djangocms-moderation
