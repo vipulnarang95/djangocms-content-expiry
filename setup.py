@@ -31,5 +31,4 @@ setup(
     author_email="enquiries@eliga.services",
     url="https://github.com/EligaServices/djangocms-content-expiry",
     license="BSD",
-    zip_safe=False,
 )
