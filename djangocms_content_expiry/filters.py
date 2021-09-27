@@ -30,7 +30,7 @@ class SimpleListMultiselectFilter(admin.SimpleListFilter):
 class ContentTypeFilter(SimpleListMultiselectFilter):
     title = _("Content Type")
     parameter_name = "content_type"
-    template = 'djangocms_content_expiry/multiselect-filter.html'
+    template = 'djangocms_content_expiry/multiselect_filter.html'
 
     def lookups(self, request, model_admin):
         list = []
@@ -67,7 +67,7 @@ class VersionStateFilter(SimpleListMultiselectFilter):
     parameter_name = "state"
     default_filter_value = PUBLISHED
     show_all_param_value = "_all_"
-    template = 'djangocms_content_expiry/multiselect-filter.html'
+    template = 'djangocms_content_expiry/multiselect_filter.html'
 
     def _is_default(self, filter_value):
         if self.default_filter_value == filter_value and self.value() is None:
