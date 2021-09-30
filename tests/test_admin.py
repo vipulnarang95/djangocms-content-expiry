@@ -1,6 +1,9 @@
 import datetime
 from unittest.mock import patch
 
+from django.contrib import admin
+from django.test import RequestFactory
+
 from cms.test_utils.testcases import CMSTestCase
 
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
@@ -12,7 +15,6 @@ from djangocms_content_expiry.test_utils.polls.factories import PollContentExpir
 
 
 class ContentExpiryAdminViewsPermissionsTestCase(CMSTestCase):
-
     def setUp(self):
         self.content_expiry = PollContentExpiryFactory()
 
@@ -72,7 +74,6 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
 
 
 class ContentExpiryChangelistTestCase(CMSTestCase):
-
     def test_change_fields(self):
         """
         Ensure the change list presents list display items from the admin file
@@ -91,7 +92,6 @@ class ContentExpiryChangelistTestCase(CMSTestCase):
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
-
     @freeze_time("2200-01-14")
     @patch('djangocms_content_expiry.helpers.DEFAULT_RANGEFILTER_DELTA', 15)
     def test_expired_filter_default_setting(self):
@@ -481,4 +481,220 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             [expiry_draft.pk],
             transform=lambda x: x.pk,
             ordered=False,
+        )
+
+
+class ContentExpiryCsvExportFilterSettingsTestCase(CMSTestCase):
+    def setUp(self):
+        self.date = datetime.datetime.now() - datetime.timedelta(days=5)
+        self.admin_endpoint = self.get_admin_url(ContentExpiry, "export_csv")
+
+    def test_version_filter_boundaries_in_export(self):
+        """
+        Export respects applied version filters.
+        CSV data should only export matching versioned state results
+        """
+        # Create content expiry records for draft and published
+        PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
+        PollContentExpiryFactory(expires=self.date, version__state=PUBLISHED)
+
+        # When draft is selected only the draft entries should be shown
+        version_selection = f"?state={DRAFT}"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + version_selection)
+
+        response_content = response.content.decode()
+
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # Only draft content should be exported as the set filter should be respected
+        self.assertIn("Draft", response_content)
+        # Published content should not be available in exported data if the filter is set to display draft only
+        self.assertNotIn('Published', response_content)
+
+    def test_author_filter_boundaries_in_export(self):
+        """
+        Export respects applied author filters.
+        CSV data should only export selected author's results
+        """
+        version_1 = PollContentExpiryFactory(expires=self.date, version__state=PUBLISHED)
+        user_1 = version_1.version.created_by
+        version_2 = PollContentExpiryFactory(expires=self.date, version__state=PUBLISHED)
+        user_2 = version_2.version.created_by
+
+        # Filter by a user_1
+        author_selection = f"?created_by={version_1.pk}"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + author_selection)
+
+        response_content = response.content.decode()
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # User 1 is in response
+        self.assertIn(user_1.username, response_content)
+        # User 2 should not be in the response
+        self.assertNotIn(user_2.username, response_content)
+
+    def test_content_type_filter_boundaries_in_export(self):
+        """
+        Export respects applied content type filters.
+        CSV data should only export content matching selected content type's results
+        """
+        content_expiry = PollContentExpiryFactory(expires=self.date, version__state=PUBLISHED)
+        version = content_expiry.version
+
+        # Testing page content filter with polls content
+        content_type = f"?content_type={version.content_type.pk}"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + content_type)
+
+        response_content = response.content.decode()
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('poll content', response_content)
+
+    @freeze_time("2200-01-14")
+    @patch('djangocms_content_expiry.helpers.DEFAULT_RANGEFILTER_DELTA', 15)
+    def test_date_range_filter_boundaries_in_export(self):
+        """
+        The boundaries of the expired by date range filter are
+        set to check that only records due to expire are exported
+        """
+        from_date = datetime.datetime.now()
+        to_date = from_date - datetime.timedelta(days=110)
+
+        # Record that is expired by 1 day
+        delta_1 = datetime.timedelta(days=1)
+        expire_at_1 = from_date + delta_1
+        poll_content_1 = PollContentExpiryFactory(expires=expire_at_1, version__state=PUBLISHED)
+
+        # Record that is set to expire today
+        expire_at_2 = from_date
+        poll_content_2 = PollContentExpiryFactory(expires=expire_at_2, version__state=PUBLISHED)
+
+        # Record that is set to expire tomorrow
+        delta_3 = datetime.timedelta(days=1)
+        expire_at_3 = from_date - delta_3
+        poll_content_3 = PollContentExpiryFactory(expires=expire_at_3, version__state=PUBLISHED)
+
+        # Record that is set to expire in 1 day before the end date
+        delta_4 = datetime.timedelta(days=109)
+        expire_at_4 = from_date - delta_4
+        poll_content_4 = PollContentExpiryFactory(expires=expire_at_4, version__state=PUBLISHED)
+
+        # Record that is set to expire the same day as the end date
+        delta_5 = datetime.timedelta(days=110)
+        expire_at_5 = from_date - delta_5
+        poll_content_5 = PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
+
+        # Record that is set to expire a day after the end date
+        delta_6 = datetime.timedelta(days=111)
+        expire_at_6 = from_date - delta_6
+        poll_content_6 = PollContentExpiryFactory(expires=expire_at_6, version__state=PUBLISHED)
+
+        with self.login_user_context(self.get_superuser()):
+            url_date_range = f"?expires__range__gte={to_date.date()}&expires__range__lte={from_date.date()}"
+            # admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+            response = self.client.get(self.admin_endpoint + url_date_range)
+
+        response_content = response.content.decode()
+
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # Content is already expired and should not be included in the export
+        self.assertNotIn(poll_content_1.version.content.text, response_content)
+        # Content which matches the date range should be exported
+        self.assertIn(poll_content_2.version.content.text, response_content)
+        self.assertIn(poll_content_3.version.content.text, response_content)
+        self.assertIn(poll_content_4.version.content.text, response_content)
+        self.assertIn(poll_content_5.version.content.text, response_content)
+        # Content that is set to expire a day after the end date should not be exported
+        self.assertNotIn(poll_content_6.version.content.text, response_content)
+
+
+class ContentExpiryCsvExportFileTestCase(CMSTestCase):
+    def setUp(self):
+        self.date = datetime.datetime.now() - datetime.timedelta(days=5)
+        self.admin_endpoint = self.get_admin_url(ContentExpiry, "export_csv")
+
+    def test_export_button_endpoint_response_is_a_csv(self):
+        """
+        Valid csv file is returned from the admin export endpoint
+        """
+        PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
+
+        version_selection = "?state=_all_"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + version_selection)
+
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # Response contains a csv file
+        self.assertEquals(
+            response.get('Content-Disposition'),
+            "attachment; filename={}.csv".format("djangocms_content_expiry.contentexpiry")
+        )
+
+    def test_export_content_headers(self):
+        """
+        Export should contain all the headings in the current content expiry list display
+        """
+        content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
+
+        version_admin = admin.site._registry[type(content_expiry)]
+        request = RequestFactory().get("/")
+
+        list_display = version_admin.get_list_display(request)
+
+        version_selection = "?state=_all_"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + version_selection)
+
+        response_content = response.content.decode()
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # Response contains headings in the list display
+        for heading in list_display:
+            if heading == "expires":
+                heading = "Expiry Date"
+            heading = heading.title().replace("_", " ")
+            self.assertIn(heading, response_content)
+
+    def test_file_content_contains_values(self):
+        """
+        CSV response should contain expected values
+        """
+        content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
+
+        version_selection = "?state=_all_"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + version_selection)
+
+        response_content = response.content.decode()
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # Content type (poll content) should be in the csv response
+        self.assertIn(content_expiry.version.content_type.name, response_content)
+        # Another spot check to ensure version state is in the csv response
+        self.assertIn("Draft", response_content)
+
+    def test_export_button_is_visible(self):
+        """
+        Export button should be visible on the frontend changelist
+        """
+        admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(admin_endpoint)
+
+        self.assertContains(
+            response,
+            '<a class="historylink" href="/en/admin/djangocms_content_expiry/contentexpiry/export_csv/?">Export</a>',
+            html=True
         )
