@@ -2,6 +2,12 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 
 import factory
+from djangocms_moderation.models import (
+    ModerationCollection,
+    ModerationRequest,
+    ModerationRequestTreeNode,
+    Workflow,
+)
 from factory.fuzzy import FuzzyText
 
 from djangocms_content_expiry.models import ContentExpiry
@@ -45,3 +51,55 @@ class ContentExpiryFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = ContentExpiry
+
+
+class WorkflowFactory(factory.django.DjangoModelFactory):
+    name = FuzzyText(length=12)
+
+    class Meta:
+        model = Workflow
+
+
+class ModerationCollectionFactory(factory.django.DjangoModelFactory):
+    name = FuzzyText(length=12)
+    author = factory.SubFactory(UserFactory)
+    workflow = factory.SubFactory(WorkflowFactory)
+
+    class Meta:
+        model = ModerationCollection
+
+
+class ModerationRequestFactory(factory.django.DjangoModelFactory):
+    collection = factory.SubFactory(ModerationCollectionFactory)
+    version = None
+    language = 'en'
+    author = factory.LazyAttribute(lambda o: o.collection.author)
+
+    class Meta:
+        model = ModerationRequest
+
+
+class RootModerationRequestTreeNodeFactory(factory.django.DjangoModelFactory):
+    moderation_request = factory.SubFactory(ModerationRequestFactory)
+
+    class Meta:
+        model = ModerationRequestTreeNode
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        """Make sure this is the root of a tree"""
+        return model_class.add_root(*args, **kwargs)
+
+
+class ChildModerationRequestTreeNodeFactory(factory.django.DjangoModelFactory):
+    moderation_request = factory.SubFactory(ModerationRequestFactory)
+    parent = factory.SubFactory(RootModerationRequestTreeNodeFactory)
+
+    class Meta:
+        model = ModerationRequestTreeNode
+        inline_args = ("parent",)
+
+    @classmethod
+    def _create(cls, model_class, parent, *args, **kwargs):
+        """Make sure this is the child of a parent node"""
+        return parent.add_child(*args, **kwargs)

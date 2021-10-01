@@ -49,12 +49,38 @@ def get_expiry_date(obj):
 get_expiry_date.short_description = CONTENT_EXPIRY_EXPIRE_FIELD_LABEL
 
 
+def get_copy_content_expiry_button(obj):
+    """
+    Return a user friendly link to copy a content expiry to other Moderation Request Items
+    link redirects to view which handles this
+    """
+    version = obj.moderation_request.version
+
+    if hasattr(version, "contentexpiry"):
+        content_expiry = version.contentexpiry
+        view_endpoint = format_html(
+            "{}?collection__id={}&moderation_request__id={}&_popup=1",
+            reverse("admin:djangocms_moderation_moderationrequesttreenode_copy"),
+            obj.moderation_request.collection.pk,
+            obj.moderation_request.pk,
+        )
+        return render_to_string(
+            "djangocms_content_expiry/admin/icons/calendar_copy_icon.html", {
+                "url": view_endpoint,
+                "content_expiry_id": f"content_expiry_{content_expiry.pk}",
+                "moderation_request_id": f"moderation_request_{obj.moderation_request.pk}"
+            }
+        )
+    return ""
+
+
 class ContentExpiryAppConfig(CMSAppConfig):
     # Enable moderation to be able to "configure it"
     djangocms_moderation_enabled = True
     moderated_models = []
     moderation_request_changelist_actions = [
         get_moderation_content_expiry_link,
+        get_copy_content_expiry_button,
     ]
     moderation_request_changelist_fields = [
         get_expiry_date,
