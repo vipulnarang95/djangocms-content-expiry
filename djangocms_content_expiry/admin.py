@@ -12,9 +12,9 @@ from .filters import (
     ContentTypeFilter,
     VersionStateFilter,
 )
-from .forms import ContentExpiryForm
+from .forms import ContentExpiryForm, DefaultContentExpiryConfigurationForm
 from .helpers import get_rangefilter_expires_default
-from .models import ContentExpiry
+from .models import ContentExpiry, DefaultContentExpiryConfiguration
 
 
 @admin.register(ContentExpiry)
@@ -134,3 +134,9 @@ class ContentExpiryAdmin(admin.ModelAdmin):
         cl = changelist(**changelist_kwargs)
 
         return cl.get_queryset(request)
+
+
+@admin.register(DefaultContentExpiryConfiguration)
+class DefaultContentExpiryConfigurationAdmin(admin.ModelAdmin):
+    list_display = ['content_type', 'duration']
+    form = DefaultContentExpiryConfigurationForm

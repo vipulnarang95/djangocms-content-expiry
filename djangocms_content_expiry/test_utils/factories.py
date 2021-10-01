@@ -8,9 +8,12 @@ from djangocms_moderation.models import (
     ModerationRequestTreeNode,
     Workflow,
 )
-from factory.fuzzy import FuzzyText
+from factory.fuzzy import FuzzyInteger, FuzzyText
 
-from djangocms_content_expiry.models import ContentExpiry
+from djangocms_content_expiry.models import (
+    ContentExpiry,
+    DefaultContentExpiryConfiguration,
+)
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -103,3 +106,11 @@ class ChildModerationRequestTreeNodeFactory(factory.django.DjangoModelFactory):
     def _create(cls, model_class, parent, *args, **kwargs):
         """Make sure this is the child of a parent node"""
         return parent.add_child(*args, **kwargs)
+
+
+class DefaultContentExpiryConfigurationFactory(factory.django.DjangoModelFactory):
+    content_type = None
+    duration = FuzzyInteger(1, 12)
+
+    class Meta:
+        model = DefaultContentExpiryConfiguration

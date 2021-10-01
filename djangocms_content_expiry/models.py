@@ -1,10 +1,20 @@
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from djangocms_versioning.models import Version
+from djangocms_versioning.versionables import _cms_extension
 
+from .conf import DEFAULT_CONTENT_EXPIRY_DURATION
 from .constants import CONTENT_EXPIRY_EXPIRE_FIELD_LABEL
+
+
+def _limit_content_type_choices():
+    model_list = [value for value in _cms_extension().versionables_by_content]
+    content_type_list = ContentType.objects.get_for_models(*model_list).items()
+    inclusion = [content_type.pk for key, content_type in content_type_list]
+    return {"id__in": inclusion}
 
 
 class ContentExpiry(models.Model):
@@ -24,3 +34,21 @@ class ContentExpiry(models.Model):
     class Meta:
         verbose_name = _("Content Expiry")
         verbose_name_plural = _("Content Expiry")
+
+
+class DefaultContentExpiryConfiguration(models.Model):
+    content_type = models.OneToOneField(
+        ContentType,
+        primary_key=True,
+        limit_choices_to=_limit_content_type_choices,
+        on_delete=models.CASCADE,
+        verbose_name=_('content type')
+    )
+    duration = models.IntegerField(help_text=_("Duration in months"), default=DEFAULT_CONTENT_EXPIRY_DURATION)
+
+    class Meta:
+        verbose_name = _("Content Type Configuration")
+        verbose_name_plural = _("Content Type Configuration")
+
+    def __str__(self):
+        return str(self.content_type)
