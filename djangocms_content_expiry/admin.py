@@ -26,7 +26,8 @@ class ContentExpiryAdmin(admin.ModelAdmin):
 
     class Media:
         css = {
-            'all': ('djangocms_content_expiry/css/date_filter.css',)
+            'all': ('djangocms_content_expiry/css/date_filter.css',
+                    'djangocms_content_expiry/css/multiselect_filter.css',)
         }
 
     def has_add_permission(self, *args, **kwargs):

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 
@@ -6,7 +7,7 @@ from djangocms_versioning.constants import PUBLISHED, VERSION_STATES
 from djangocms_versioning.versionables import _cms_extension
 from rangefilter.filters import DateRangeFilter
 
-from .helpers import get_authors, get_rangefilter_expires_default
+from .helpers import get_rangefilter_expires_default
 
 
 class SimpleListMultiselectFilter(admin.SimpleListFilter):
@@ -153,13 +154,18 @@ class AuthorFilter(admin.SimpleListFilter):
     """
     An author filter limited to those users who have added expiration dates
     """
-    title = _("Author")
+    title = _("Version Author")
     parameter_name = "created_by"
 
     def lookups(self, request, model_admin):
         from django.utils.encoding import force_text
+        User = get_user_model()
         options = []
-        for user in get_authors():
+        qs = model_admin.get_queryset(request)
+        authors = qs.values_list('version__created_by', flat=True).distinct()
+        users = User.objects.filter(pk__in=authors)
+
+        for user in users:
             options.append(
                 (force_text(user.pk), user.get_full_name() or user.get_username())
             )

@@ -5,22 +5,7 @@ from cms.test_utils.testcases import CMSTestCase
 
 from freezegun import freeze_time
 
-from djangocms_content_expiry.helpers import (
-    get_authors,
-    get_rangefilter_expires_default,
-)
-from djangocms_content_expiry.test_utils.polls.factories import PollContentExpiryFactory
-
-
-class ContentExpiryAuthorHelperTestCase(CMSTestCase):
-    def test_get_authors_query_burden(self):
-        """
-        Ensure that the get_authors helper does not execute multiple queries
-        """
-        PollContentExpiryFactory.create_batch(20)
-        with self.assertNumQueries(1):
-            users = get_authors()
-            self.assertEqual(users.count(), 20)
+from djangocms_content_expiry.helpers import get_rangefilter_expires_default
 
 
 class ContentExpiryDefaultRangeHelperTestCase(CMSTestCase):

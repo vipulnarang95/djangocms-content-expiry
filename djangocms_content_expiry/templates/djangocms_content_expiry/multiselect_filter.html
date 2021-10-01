@@ -1,5 +1,4 @@
 {% load i18n %}
-
 <h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
 <ul class="mulitple-choice">
 {% for choice in choices %}
@@ -9,13 +8,15 @@
         </li>
     {% elif not choice.initial %}
         <li{% if choice.selected %} class="selected"{% endif %}>
-          <a href="{{ choice.query_string|iriencode }}" title="{{ choice.display }}" style="display:inline">{{ choice.display }}</a>
           {% if choice.selected and choice.exclude_query_string %}
-            <a class="small" href="{{ choice.exclude_query_string|iriencode }}" style="display:inline">(exclude)</a>
+                <input type="checkbox" id="{{ choice.display }}" checked
+                       onclick="location.href='{{ choice.exclude_query_string|iriencode }}';">
           {% endif %}
           {% if not choice.selected and choice.include_query_string %}
-            <a class="small" href="{{ choice.include_query_string|iriencode }}" style="display:inline">(include)</a>
+                <input type="checkbox" id="{{ choice.display }}"
+                       onclick="location.href='{{ choice.include_query_string|iriencode }}';">
           {% endif %}
+            <label for="{{ choice.display }}">{{ choice.display|title }}</label>
         </li>
     {% endif %}
 {% endfor %}
