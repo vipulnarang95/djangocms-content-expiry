@@ -1,5 +1,5 @@
 from django.conf.urls import url
-from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
 from django.urls import reverse
 
 from djangocms_moderation import admin as moderation_admin
@@ -88,7 +88,7 @@ def copy_content_expiry_view(self, request):
                         expires=content_expiry.expires,
                     )
 
-        return HttpResponseRedirect(redirect_url)
+        return redirect(redirect_url)
 
 
 moderation_admin.ModerationRequestTreeAdmin.copy_content_expiry_view = copy_content_expiry_view
