@@ -31,12 +31,12 @@ class DefaultContentExpiryConfigurationForm(forms.ModelForm):
         field_key_ctype = 'content_type'
 
         # If adding
-        if 'initial' in kwargs:
+        if not getattr(self.instance, 'pk', None):
             # Only get items that haven't been set yet
             self.fields[field_key_ctype].queryset = self.fields[field_key_ctype].queryset.filter(
                 defaultcontentexpiryconfiguration__isnull=True
             )
-        # Otherwise, viewing / editing
+        # Otherwise, changing (viewing / editing)
         else:
             content_type_field = DefaultContentExpiryConfiguration._meta.get_field(field_key_ctype).remote_field
             self.fields[field_key_ctype].widget = ForeignKeyReadOnlyWidget(content_type_field, site)

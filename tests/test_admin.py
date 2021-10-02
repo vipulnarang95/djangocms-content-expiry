@@ -759,7 +759,7 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         The Content Type list should only show content types that have not yet been created
         and are registered as versioning compatible.
         """
-        form = admin.site._registry[DefaultContentExpiryConfiguration].form(initial=None)
+        form = admin.site._registry[DefaultContentExpiryConfiguration].form()
         field_content_type = form.fields['content_type']
         versioning_config = apps.get_app_config("djangocms_versioning")
 
@@ -778,7 +778,7 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
             content_type=poll_content_expiry.version.content_type
         )
 
-        form = admin.site._registry[DefaultContentExpiryConfiguration].form(initial=None)
+        form = admin.site._registry[DefaultContentExpiryConfiguration].form()
         field_content_type = form.fields['content_type']
         versioning_config = apps.get_app_config("djangocms_versioning")
 
@@ -794,6 +794,24 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
             content_type_list,
         )
 
+    def test_add_form_content_type_submission_not_set(self):
+        """
+        The Content Type list should still show the content type list if
+        the user submitted the form and the content type option was not selected
+        """
+        poll_content_expiry = PollContentExpiryFactory()
+        default_expiry_configuration = DefaultContentExpiryConfigurationFactory(
+            content_type=poll_content_expiry.version.content_type
+        )
+        preload_form_data = {
+            "id": default_expiry_configuration.pk,
+            "duration": default_expiry_configuration.duration,
+        }
+        form = admin.site._registry[DefaultContentExpiryConfiguration].form(preload_form_data)
+        field_content_type = form.fields['content_type']
+
+        self.assertNotEqual(field_content_type.widget.__class__, ForeignKeyReadOnlyWidget)
+
     def test_change_form_content_type_items(self):
         """
         The Content Type control should be read only and not allow the user to change it
@@ -802,12 +820,7 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         default_expiry_configuration = DefaultContentExpiryConfigurationFactory(
             content_type=poll_content_expiry.version.content_type
         )
-        preload_form_data = {
-            "id": default_expiry_configuration.pk,
-            "content_type": default_expiry_configuration.content_type.pk,
-            "duration": default_expiry_configuration.duration,
-        }
-        form = admin.site._registry[DefaultContentExpiryConfiguration].form(preload_form_data)
+        form = admin.site._registry[DefaultContentExpiryConfiguration].form(instance=default_expiry_configuration)
         field_content_type = form.fields['content_type']
 
         self.assertEqual(field_content_type.widget.__class__, ForeignKeyReadOnlyWidget)
