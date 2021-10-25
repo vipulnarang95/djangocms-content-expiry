@@ -20,5 +20,5 @@ class ContentExpiryDefaultRangeHelperTestCase(CMSTestCase):
         with freeze_time("2100-10-10 00:00:00", tz_offset=0):
             start, end = get_rangefilter_expires_default()
 
-        self.assertEqual(start, datetime(2100, 10, 5, 0, 0))
-        self.assertEqual(end, datetime(2100, 10, 10, 0, 0))
+        self.assertEqual(start, datetime(2100, 10, 10, 0, 0))
+        self.assertEqual(end, datetime(2100, 10, 15, 0, 0))

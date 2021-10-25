@@ -8,6 +8,6 @@ def get_rangefilter_expires_default():
     Sets a default date range to help filter
     Content Expiry records
     """
-    start_date = datetime.now() - timedelta(DEFAULT_RANGEFILTER_DELTA)
-    end_date = datetime.now()
+    start_date = datetime.now()
+    end_date = datetime.now() + timedelta(DEFAULT_RANGEFILTER_DELTA)
     return start_date, end_date

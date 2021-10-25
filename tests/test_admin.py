@@ -111,7 +111,7 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
 
         # Record that is expired by 1 day
         delta_1 = datetime.timedelta(days=1)
-        expire_at_1 = from_date + delta_1
+        expire_at_1 = from_date - delta_1
         PollContentExpiryFactory(expires=expire_at_1, version__state=PUBLISHED)
 
         # Record that is set to expire today
@@ -120,22 +120,22 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
 
         # Record that is set to expire tomorrow
         delta_3 = datetime.timedelta(days=1)
-        expire_at_3 = from_date - delta_3
+        expire_at_3 = from_date + delta_3
         poll_content_3 = PollContentExpiryFactory(expires=expire_at_3, version__state=PUBLISHED)
 
         # Record that is set to expire in 1 day before the end date
         delta_4 = datetime.timedelta(days=14)
-        expire_at_4 = from_date - delta_4
+        expire_at_4 = from_date + delta_4
         poll_content_4 = PollContentExpiryFactory(expires=expire_at_4, version__state=PUBLISHED)
 
         # Record that is set to expire the same day as the end date
         delta_5 = datetime.timedelta(days=15)
-        expire_at_5 = from_date - delta_5
+        expire_at_5 = from_date + delta_5
         poll_content_5 = PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
 
         # Record that is set to expire a day after the end date
         delta_6 = datetime.timedelta(days=16)
-        expire_at_6 = from_date - delta_6
+        expire_at_6 = from_date + delta_6
         PollContentExpiryFactory(expires=expire_at_6, version__state=PUBLISHED)
 
         with self.login_user_context(self.get_superuser()):
@@ -163,11 +163,11 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
         need to differ ensure that we not just re-testing the default setting.
         """
         from_date = datetime.datetime.now()
-        to_date = from_date - datetime.timedelta(days=110)
+        to_date = from_date + datetime.timedelta(days=110)
 
         # Record that is expired by 1 day
         delta_1 = datetime.timedelta(days=1)
-        expire_at_1 = from_date + delta_1
+        expire_at_1 = from_date - delta_1
         PollContentExpiryFactory(expires=expire_at_1, version__state=PUBLISHED)
 
         # Record that is set to expire today
@@ -176,26 +176,26 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
 
         # Record that is set to expire tomorrow
         delta_3 = datetime.timedelta(days=1)
-        expire_at_3 = from_date - delta_3
+        expire_at_3 = from_date + delta_3
         poll_content_3 = PollContentExpiryFactory(expires=expire_at_3, version__state=PUBLISHED)
 
         # Record that is set to expire in 1 day before the end date
         delta_4 = datetime.timedelta(days=109)
-        expire_at_4 = from_date - delta_4
+        expire_at_4 = from_date + delta_4
         poll_content_4 = PollContentExpiryFactory(expires=expire_at_4, version__state=PUBLISHED)
 
         # Record that is set to expire the same day as the end date
         delta_5 = datetime.timedelta(days=110)
-        expire_at_5 = from_date - delta_5
+        expire_at_5 = from_date + delta_5
         poll_content_5 = PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
 
         # Record that is set to expire a day after the end date
         delta_6 = datetime.timedelta(days=111)
-        expire_at_6 = from_date - delta_6
+        expire_at_6 = from_date + delta_6
         PollContentExpiryFactory(expires=expire_at_6, version__state=PUBLISHED)
 
         with self.login_user_context(self.get_superuser()):
-            url_date_range = f"?expires__range__gte={to_date.date()}&expires__range__lte={from_date.date()}"
+            url_date_range = f"?expires__range__gte={from_date.date()}&expires__range__lte={to_date.date()}"
             admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
             response = self.client.get(admin_endpoint + url_date_range)
 
@@ -231,7 +231,7 @@ class ContentExpiryAuthorFilterTestCase(CMSTestCase):
         """
         Author filter should only show selected author's results
         """
-        date = datetime.datetime.now() - datetime.timedelta(days=5)
+        date = datetime.datetime.now() + datetime.timedelta(days=5)
         # Create records with a set user
         user = UserFactory()
         expiry_author = PollContentExpiryFactory.create_batch(2, expires=date, created_by=user,
@@ -276,7 +276,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         """
         Content type filter should only show relevant content type when filter is selected
         """
-        date = datetime.datetime.now() - datetime.timedelta(days=5)
+        date = datetime.datetime.now() + datetime.timedelta(days=5)
 
         poll_content_expiry = PollContentExpiryFactory(expires=date)
         version = poll_content_expiry.version
@@ -304,7 +304,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
         should be expired, we provide the ability to filter the list to find existing entries
         or else there would be no other way to find them.
         """
-        date = datetime.datetime.now() - datetime.timedelta(days=5)
+        date = datetime.datetime.now() + datetime.timedelta(days=5)
         # Create draft records
         PollContentExpiryFactory.create_batch(2, expires=date, version__state=DRAFT)
         # Create published records
@@ -333,7 +333,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
         Filter options can be selected and changed, the expiry records shown should match the
         options selected.
         """
-        date = datetime.datetime.now() - datetime.timedelta(days=5)
+        date = datetime.datetime.now() + datetime.timedelta(days=5)
         # Create draft records
         expiry_draft_list = PollContentExpiryFactory.create_batch(2, expires=date, version__state=DRAFT)
         # Create published records
@@ -408,7 +408,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
         Multiple filters can be selected at once, changing and adding filters
         should show the expiry records based on the multiple options selected
         """
-        date = datetime.datetime.now() - datetime.timedelta(days=5)
+        date = datetime.datetime.now() + datetime.timedelta(days=5)
         # Create draft records
         expiry_draft_list = PollContentExpiryFactory.create_batch(2, expires=date, version__state=DRAFT)
         # Create published records
@@ -457,7 +457,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
         When selecting the All filter option all of the expiry records should be shown,
         selecting another option should remove the all selection.
         """
-        date = datetime.datetime.now() - datetime.timedelta(days=5)
+        date = datetime.datetime.now() + datetime.timedelta(days=5)
         expiry_draft = PollContentExpiryFactory(expires=date, version__state=DRAFT)
         expiry_published = PollContentExpiryFactory(expires=date, version__state=PUBLISHED)
         expiry_archived = PollContentExpiryFactory(expires=date, version__state=ARCHIVED)
@@ -495,7 +495,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
 
 class ContentExpiryCsvExportFilterSettingsTestCase(CMSTestCase):
     def setUp(self):
-        self.date = datetime.datetime.now() - datetime.timedelta(days=5)
+        self.date = datetime.datetime.now() + datetime.timedelta(days=5)
         self.admin_endpoint = self.get_admin_url(ContentExpiry, "export_csv")
 
     def test_version_filter_boundaries_in_export(self):
@@ -573,11 +573,11 @@ class ContentExpiryCsvExportFilterSettingsTestCase(CMSTestCase):
         set to check that only records due to expire are exported
         """
         from_date = datetime.datetime.now()
-        to_date = from_date - datetime.timedelta(days=110)
+        to_date = from_date + datetime.timedelta(days=110)
 
         # Record that is expired by 1 day
         delta_1 = datetime.timedelta(days=1)
-        expire_at_1 = from_date + delta_1
+        expire_at_1 = from_date - delta_1
         poll_content_1 = PollContentExpiryFactory(expires=expire_at_1, version__state=PUBLISHED)
 
         # Record that is set to expire today
@@ -586,26 +586,26 @@ class ContentExpiryCsvExportFilterSettingsTestCase(CMSTestCase):
 
         # Record that is set to expire tomorrow
         delta_3 = datetime.timedelta(days=1)
-        expire_at_3 = from_date - delta_3
+        expire_at_3 = from_date + delta_3
         poll_content_3 = PollContentExpiryFactory(expires=expire_at_3, version__state=PUBLISHED)
 
         # Record that is set to expire in 1 day before the end date
         delta_4 = datetime.timedelta(days=109)
-        expire_at_4 = from_date - delta_4
+        expire_at_4 = from_date + delta_4
         poll_content_4 = PollContentExpiryFactory(expires=expire_at_4, version__state=PUBLISHED)
 
         # Record that is set to expire the same day as the end date
         delta_5 = datetime.timedelta(days=110)
-        expire_at_5 = from_date - delta_5
+        expire_at_5 = from_date + delta_5
         poll_content_5 = PollContentExpiryFactory(expires=expire_at_5, version__state=PUBLISHED)
 
         # Record that is set to expire a day after the end date
         delta_6 = datetime.timedelta(days=111)
-        expire_at_6 = from_date - delta_6
+        expire_at_6 = from_date + delta_6
         poll_content_6 = PollContentExpiryFactory(expires=expire_at_6, version__state=PUBLISHED)
 
         with self.login_user_context(self.get_superuser()):
-            url_date_range = f"?expires__range__gte={to_date.date()}&expires__range__lte={from_date.date()}"
+            url_date_range = f"?expires__range__gte={from_date.date()}&expires__range__lte={to_date.date()}"
             # admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
             response = self.client.get(self.admin_endpoint + url_date_range)
 
@@ -626,7 +626,7 @@ class ContentExpiryCsvExportFilterSettingsTestCase(CMSTestCase):
 
 class ContentExpiryCsvExportFileTestCase(CMSTestCase):
     def setUp(self):
-        self.date = datetime.datetime.now() - datetime.timedelta(days=5)
+        self.date = datetime.datetime.now() + datetime.timedelta(days=5)
         self.admin_endpoint = self.get_admin_url(ContentExpiry, "export_csv")
 
     def test_export_button_endpoint_response_is_a_csv(self):
