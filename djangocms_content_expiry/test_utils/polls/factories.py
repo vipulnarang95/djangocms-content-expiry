@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 import factory
 from djangocms_versioning.models import Version
 from djangocms_versioning.signals import post_version_operation, pre_version_operation
@@ -50,7 +52,7 @@ class PollContentWithVersionFactory(PollContentFactory):
 class PollContentExpiryFactory(factory.django.DjangoModelFactory):
     created_by = factory.SubFactory(UserFactory)
     version = factory.SubFactory(PollVersionFactory)
-    expires = factory.Faker('date_object')
+    expires = factory.Faker('date_time', tzinfo=timezone.get_current_timezone())
 
     class Meta:
         model = ContentExpiry

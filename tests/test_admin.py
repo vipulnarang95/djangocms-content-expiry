@@ -3,13 +3,14 @@ from unittest.mock import patch
 
 from django.apps import apps
 from django.contrib import admin
-from django.test import RequestFactory
+from django.utils import timezone
 
 from cms.test_utils.testcases import CMSTestCase
 
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
 from freezegun import freeze_time
 
+from djangocms_content_expiry.conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
 from djangocms_content_expiry.forms import ForeignKeyReadOnlyWidget
 from djangocms_content_expiry.models import (
     ContentExpiry,
@@ -626,8 +627,14 @@ class ContentExpiryCsvExportFilterSettingsTestCase(CMSTestCase):
 
 class ContentExpiryCsvExportFileTestCase(CMSTestCase):
     def setUp(self):
-        self.date = datetime.datetime.now() + datetime.timedelta(days=5)
-        self.admin_endpoint = self.get_admin_url(ContentExpiry, "export_csv")
+        # Use a timezone aware time due to the admin using a timezone
+        # which causes a datetime mismatch for the CSV view
+        self.date = timezone.now() + datetime.timedelta(days=5)
+        # CSV Headings: 0 -> Title, 1 -> Content Type, 2 -> Expiry Date, 3 -> Version State, 4 -> Author
+        self.headings_map = {
+            "title": 0, "ctype": 1, "expiry_date": 2, "version_state": 3, "version_author": 4
+        }
+        self.export_admin_endpoint = self.get_admin_url(ContentExpiry, "export_csv") + "?state=_all_"
 
     def test_export_button_endpoint_response_is_a_csv(self):
         """
@@ -635,10 +642,8 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
         """
         PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
 
-        version_selection = "?state=_all_"
-
         with self.login_user_context(self.get_superuser()):
-            response = self.client.get(self.admin_endpoint + version_selection)
+            response = self.client.get(self.export_admin_endpoint)
 
         # Endpoint is returning 200 status code
         self.assertEqual(response.status_code, 200)
@@ -652,46 +657,75 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
         """
         Export should contain all the headings in the current content expiry list display
         """
-        content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
-
-        version_admin = admin.site._registry[type(content_expiry)]
-        request = RequestFactory().get("/")
-
-        list_display = version_admin.get_list_display(request)
-
-        version_selection = "?state=_all_"
+        PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
 
         with self.login_user_context(self.get_superuser()):
-            response = self.client.get(self.admin_endpoint + version_selection)
+            response = self.client.get(self.export_admin_endpoint)
 
-        response_content = response.content.decode()
-        # Endpoint is returning 200 status code
+        csv_headings = response.content.decode().splitlines()[0].split(",")
+
         self.assertEqual(response.status_code, 200)
-        # Response contains headings in the list display
-        for heading in list_display:
-            if heading == "expires":
-                heading = "Expiry Date"
-            heading = heading.title().replace("_", " ")
-            self.assertIn(heading, response_content)
+
+        self.assertEqual(
+            csv_headings[self.headings_map["title"]],
+            "Title"
+        )
+        self.assertEqual(
+            csv_headings[self.headings_map["ctype"]],
+            "Content Type"
+        )
+        self.assertEqual(
+            csv_headings[self.headings_map["expiry_date"]],
+            "Expiry Date"
+        )
+        self.assertEqual(
+            csv_headings[self.headings_map["version_state"]],
+            "Version State"
+        )
+        self.assertEqual(
+            csv_headings[self.headings_map["version_author"]],
+            "Version Author"
+        )
 
     def test_file_content_contains_values(self):
         """
-        CSV response should contain expected values
+        CSV response should contain expected values.
+
+        The dates stored for expiry date are stored with the servers timezone attached, the export
+        is exported as UTC so the date time will be converted hence the need to use a timezone aware
+        datetime expiry date object.
         """
         content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
 
-        version_selection = "?state=_all_"
-
         with self.login_user_context(self.get_superuser()):
-            response = self.client.get(self.admin_endpoint + version_selection)
+            response = self.client.get(self.export_admin_endpoint)
 
-        response_content = response.content.decode()
-        # Endpoint is returning 200 status code
         self.assertEqual(response.status_code, 200)
-        # Content type (poll content) should be in the csv response
-        self.assertIn(content_expiry.version.content_type.name, response_content)
-        # Another spot check to ensure version state is in the csv response
-        self.assertIn("Draft", response_content)
+
+        csv_lines = response.content.decode().splitlines()
+        content_row_1 = csv_lines[1].split(",")
+
+        # The following contents should be present
+        self.assertEqual(
+            content_row_1[self.headings_map["title"]],
+            content_expiry.version.content.text
+        )
+        self.assertEqual(
+            content_row_1[self.headings_map["ctype"]],
+            content_expiry.version.content_type.name
+        )
+        self.assertEqual(
+            content_row_1[self.headings_map["expiry_date"]],
+            content_expiry.expires.strftime(DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT)
+        )
+        self.assertEqual(
+            content_row_1[self.headings_map["version_state"]],
+            "Draft"
+        )
+        self.assertEqual(
+            content_row_1[self.headings_map["version_author"]],
+            content_expiry.version.created_by.username
+        )
 
     def test_export_button_is_visible(self):
         """
