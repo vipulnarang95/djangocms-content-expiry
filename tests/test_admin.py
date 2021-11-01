@@ -204,6 +204,7 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
         datetime expiry date object.
         """
         content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
+        preview_url = content_expiry.version.content.get_preview_url()
 
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(self.export_admin_endpoint)
@@ -234,9 +235,13 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
             content_row_1[self.headings_map["version_author"]],
             content_expiry.version.created_by.username
         )
+        self.assertNotEqual(
+            content_row_1[self.headings_map["url"]],
+            preview_url
+        )
         self.assertEqual(
             content_row_1[self.headings_map["url"]],
-            content_expiry.version.content.get_preview_url()
+            response.wsgi_request.build_absolute_uri(preview_url)
         )
 
     def test_export_button_is_visible(self):

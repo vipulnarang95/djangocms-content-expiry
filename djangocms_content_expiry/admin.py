@@ -221,7 +221,9 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             content_type = ContentType.objects.get_for_model(content_expiry.version.content)
             expiry_date = self._format_export_datetime(content_expiry.expires)
             version_state = content_expiry.version.get_state_display()
-            content_url = self._get_preview_url(content_expiry)
+            # Get an external / sharable link
+            preview_url = self._get_preview_url(content_expiry)
+            external_url = request.build_absolute_uri(preview_url)
             # Write a row to the file
             writer.writerow([
                 content_expiry.version.content,
@@ -229,7 +231,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
                 expiry_date,
                 version_state,
                 content_expiry.version.created_by,
-                content_url,
+                external_url,
             ])
 
         return response
