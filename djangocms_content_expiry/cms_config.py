@@ -1,11 +1,27 @@
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import format_html
 
-from cms.app_base import CMSAppConfig
+from cms.app_base import CMSAppConfig, CMSAppExtension
+from cms.models import PageContent
 
+from .cache import (
+    get_changelist_page_content_exclusion_cache,
+    set_changelist_page_content_exclusion_cache,
+)
 from .constants import CONTENT_EXPIRY_EXPIRE_FIELD_LABEL
+
+
+try:
+    from djangocms_alias.models import AliasContent
+    djangocms_alias_enabled = True
+except ImportError:
+    djangocms_alias_enabled = False
 
 
 def get_moderation_content_expiry_link(obj):
@@ -74,6 +90,82 @@ def get_copy_content_expiry_button(obj):
     return ""
 
 
+def content_expiry_site_page_content_excluded_set(queryset, request):
+    """
+    Filter ContentExpiry records to show only PageContent objects available on a given site.
+    Model structure: Expiry->Version->Content->Page->Node->Site
+
+    :param queryset: A queryset object of ContentExpiry records
+    :param request: A request object if one exists
+    :return: A filtered list of Content Expiry records minus any none site PageContent models
+    """
+    current_site = get_current_site(request)
+    page_content_ctype = ContentType.objects.get_for_model(PageContent)
+    pagecontent_exclusion_list = get_changelist_page_content_exclusion_cache(current_site.pk)
+
+    if not pagecontent_exclusion_list:
+        pagecontent_set = PageContent._original_manager.exclude(page__node__site=current_site)
+        pagecontent_set.select_related('page__node')
+
+        pagecontent_exclusion_list = pagecontent_set.values_list('id', flat=True)
+        set_changelist_page_content_exclusion_cache(pagecontent_exclusion_list, current_site.pk)
+
+    return queryset.exclude(
+        version__content_type=page_content_ctype, version__object_id__in=pagecontent_exclusion_list
+    )
+
+
+def _get_excluded_alias_site_list(site):
+    """
+    Get a list of Alias objects that cannot be viewed by the current site
+
+    :param site: A site object to query against
+    :return: A filtered list of alias objects
+    """
+    alias_exclusion_set = AliasContent._original_manager.exclude(Q(alias__site=site) | Q(alias__site__isnull=True))
+    alias_exclusion_set.select_related('alias')
+    return alias_exclusion_set.values_list('id', flat=True)
+
+
+def content_expiry_site_alias_excluded_set(queryset, request):
+    """
+    Filter ContentExpiry records to show only Alias objects available on a given site.
+    Alias is added as part of Content Expiry because it is considered a "Core" package, the same as
+    djangocms_versioning. All other packages should define their own configuration.
+    Model structure: Expiry->Version->Content->Alias->site
+
+    :param queryset: A queryset object of ContentExpiry records
+    :param request: A request object if one exists
+    :return: A filtered list of Content Expiry records minus any none site PageContent models
+    """
+    current_site = get_current_site(request)
+    alias_content_ctype = ContentType.objects.get_for_model(AliasContent)
+    alias_exclusion_set = _get_excluded_alias_site_list(current_site)
+
+    return queryset.exclude(
+      version__content_type=alias_content_ctype, version__object_id__in=alias_exclusion_set
+    )
+
+
+class ContentExpiryExtension(CMSAppExtension):
+    def __init__(self):
+        self.expiry_changelist_queryset_filters = []
+
+    def configure_app(self, cms_config):
+        versioning_enabled = getattr(cms_config, "djangocms_versioning_enabled", False)
+        moderation_enabled = getattr(cms_config, "djangocms_moderation_enabled", False)
+        expiry_changelist_queryset_filters = getattr(
+            cms_config, "djangocms_content_expiry_changelist_queryset_filters", [])
+
+        if not versioning_enabled:
+            raise ImproperlyConfigured("Versioning needs to be enabled for Content Expiry")
+
+        if not moderation_enabled:
+            raise ImproperlyConfigured("Moderation needs to be enabled for Content Expiry")
+
+        self.expiry_changelist_queryset_filters.extend(expiry_changelist_queryset_filters)
+
+
 class ContentExpiryAppConfig(CMSAppConfig):
     # Enable moderation to be able to "configure it"
     djangocms_moderation_enabled = True
@@ -92,3 +184,11 @@ class ContentExpiryAppConfig(CMSAppConfig):
     djangocms_content_expiry_enabled = getattr(
         settings, "DJANGOCMS_CONTENT_EXPIRY_ENABLED", True
     )
+    djangocms_content_expiry_changelist_queryset_filters = [
+        content_expiry_site_page_content_excluded_set,
+    ]
+
+    if djangocms_alias_enabled:
+        djangocms_content_expiry_changelist_queryset_filters.append(
+            content_expiry_site_alias_excluded_set
+        )

@@ -1,6 +1,7 @@
 import csv
 import datetime
 
+from django.apps import apps
 from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
@@ -41,6 +42,17 @@ class ContentExpiryAdmin(admin.ModelAdmin):
                 'djangocms_content_expiry/css/multiselect_filter.css',
             )
         }
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+
+        # Execute any filters that need to be added before any of the admin filters
+        # are executed
+        app_config = apps.get_app_config("djangocms_content_expiry")
+        for content_model_filter in app_config.cms_extension.expiry_changelist_queryset_filters:
+            queryset = content_model_filter(queryset, request=request)
+
+        return queryset
 
     def has_add_permission(self, *args, **kwargs):
         # Entries are added automatically

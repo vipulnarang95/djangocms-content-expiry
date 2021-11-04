@@ -1,8 +1,13 @@
 import datetime
 
 from django.contrib import admin
+from django.contrib.sites.models import Site
+from django.contrib.sites.shortcuts import get_current_site
+from django.test import override_settings
 from django.utils import timezone
 
+from cms.api import create_page
+from cms.models import PageContent
 from cms.test_utils.testcases import CMSTestCase
 
 from djangocms_versioning.constants import DRAFT, PUBLISHED
@@ -258,3 +263,92 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
             '<a class="historylink" href="/en/admin/djangocms_content_expiry/contentexpiry/export_csv/?">Export</a>',
             html=True
         )
+
+
+class ContentExpiryChangelistPageContentSiteTestCase(CMSTestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Site 1
+        cls.site_1 = Site.objects.get(id=1)
+        # Site 2
+        cls.site_2 = Site(id=2, domain='example-2.com', name='example-2.com')
+        cls.site_2.save()
+
+    def setUp(self):
+        Site.objects.clear_cache()
+        # Record that is expired by 1 day
+        from_date = datetime.datetime.now()
+        expire_at = from_date + datetime.timedelta(days=10)
+        language = "en"
+
+        self.superuser = self.get_superuser()
+        # Create contents on site 1
+        page_1 = create_page(
+            title="Site 1 page",
+            template="page.html",
+            language=language,
+            created_by=self.superuser,
+            site=self.site_1
+        )
+        # Publish the site 1 page content
+        pagecontent_1 = PageContent._base_manager.filter(page=page_1, language=language).first()
+        self.page_1_version = pagecontent_1.versions.first()
+        self.page_1_version.publish(self.superuser)
+
+        # Set the expiry date closer than the default
+        self.page_1_version.contentexpiry.expires = expire_at
+        self.page_1_version.contentexpiry.save()
+
+        # Create contents on site 2
+        page_2 = create_page(
+            title="Site 2 page",
+            template="page.html",
+            language=language,
+            created_by=self.superuser,
+            site=self.site_2
+        )
+        # Publish the site 2 page content
+        pagecontent_2 = PageContent._base_manager.filter(page=page_2, language=language).first()
+        self.page_2_version = pagecontent_2.versions.first()
+        self.page_2_version.publish(self.superuser)
+
+        # Set the expiry date closer than the default
+        self.page_2_version.contentexpiry.expires = expire_at
+        self.page_2_version.contentexpiry.save()
+
+    def tearDown(self):
+        Site.objects.clear_cache()
+
+    def test_pages_filtered_by_default_site(self):
+        """
+        The list of change objects must be filtered by the default / current site
+        """
+        endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        queryset_result = response.context_data['cl'].result_list
+
+        # Sanity check that the correct site 1 is used
+        self.assertEqual(get_current_site(response.request), self.site_1)
+        self.assertTrue(len(queryset_result), 1)
+        self.assertTrue(queryset_result.first().pk, self.page_1_version.contentexpiry.pk)
+
+    @override_settings(SITE_ID=2)
+    def test_pages_filtered_by_other_site(self):
+        """
+        The list of change objects must be filtered by a different site
+        """
+        endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        queryset_result = response.context_data['cl'].result_list
+
+        # Sanity check that the correct site 2 is used
+        self.assertEqual(get_current_site(response.request), self.site_2)
+        self.assertTrue(len(queryset_result), 1)
+        self.assertTrue(queryset_result.first().pk, self.page_2_version.contentexpiry.pk)

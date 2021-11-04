@@ -1,17 +1,20 @@
+from unittest.mock import Mock
+
 from django.apps import apps
 from django.contrib import admin
-from django.test import RequestFactory
-
-from cms.test_utils.testcases import CMSTestCase
+from django.test import RequestFactory, TestCase
 
 from djangocms_moderation.cms_config import ModerationExtension
 from djangocms_moderation.models import ModerationRequestTreeNode
 
-from djangocms_content_expiry.cms_config import ContentExpiryAppConfig
+from djangocms_content_expiry.cms_config import (
+    ContentExpiryAppConfig,
+    ContentExpiryExtension,
+)
 from djangocms_content_expiry.constants import CONTENT_EXPIRY_EXPIRE_FIELD_LABEL
 
 
-class ModerationConfigDependancyTestCase(CMSTestCase):
+class ModerationConfigDependancyTestCase(TestCase):
     def test_moderation_config_admin_controls_exist(self):
         """
         Moderation controls are required for the content expiry records to be viewed,
@@ -56,3 +59,26 @@ class ModerationConfigDependancyTestCase(CMSTestCase):
 
         self.assertIn('get_expiry_date', list_display)
         self.assertEqual(CONTENT_EXPIRY_EXPIRE_FIELD_LABEL, moderation_admin.get_expiry_date.short_description)
+
+
+class ContentExpiryChangelistQueryFilterSettingTestCase(TestCase):
+
+    def test_valid_cms_config_parameters(self):
+        def _dummy_fn(site, queryset):
+            return queryset
+
+        def _another_dummy_fn(site, queryset):
+            return queryset
+
+        extension = ContentExpiryExtension()
+        app_1_config = Mock(
+            djangocms_content_expiry_changelist_queryset_filters=[_dummy_fn],
+        )
+        extension.configure_app(app_1_config)
+        app_2_config = Mock(
+            djangocms_content_expiry_changelist_queryset_filters=[_another_dummy_fn],
+        )
+        extension.configure_app(app_2_config)
+
+        self.assertTrue(_dummy_fn in extension.expiry_changelist_queryset_filters)
+        self.assertTrue(_another_dummy_fn in extension.expiry_changelist_queryset_filters)
