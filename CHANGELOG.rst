@@ -4,6 +4,7 @@ Changelog
 
 unreleased
 ==========
+* Content Expiry Changelist Content Type filter: Handle filtering by polymorphic models such as filer image / file.
 
 0.0.3 (2021-11-05)
 ==========
@@ -20,5 +21,3 @@ unreleased
 ==================
 
 * Initial release
-
-

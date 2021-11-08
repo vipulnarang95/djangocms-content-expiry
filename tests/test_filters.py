@@ -9,6 +9,8 @@ from cms.test_utils.testcases import CMSTestCase
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
 from freezegun import freeze_time
 
+from djangocms_content_expiry.admin import ContentExpiryAdmin
+from djangocms_content_expiry.filters import ContentTypeFilter
 from djangocms_content_expiry.forms import ForeignKeyReadOnlyWidget
 from djangocms_content_expiry.models import (
     ContentExpiry,
@@ -19,6 +21,11 @@ from djangocms_content_expiry.test_utils.factories import (
     UserFactory,
 )
 from djangocms_content_expiry.test_utils.polls.factories import PollContentExpiryFactory
+from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
+    ArtProjectContentExpiryFactory,
+    ProjectContentExpiryFactory,
+    ResearchProjectContentExpiryFactory,
+)
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
@@ -192,18 +199,38 @@ class ContentExpiryAuthorFilterTestCase(CMSTestCase):
 
 
 class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
-    def test_content_type_filter(self):
+
+    def setUp(self):
+        self.expiry_date = datetime.datetime.now() + datetime.timedelta(days=5)
+        self.poll_expiry = PollContentExpiryFactory(expires=self.expiry_date)
+        self.poll_expiry_c_type = self.poll_expiry.version.content_type.pk
+        self.project_expiry_set = ProjectContentExpiryFactory.create_batch(2, expires=self.expiry_date)
+        self.project_expiry_c_type = self.project_expiry_set[0].version.content.polymorphic_ctype_id
+        self.art_expiry_set = ArtProjectContentExpiryFactory.create_batch(2, expires=self.expiry_date)
+        self.art_expiry_c_type = self.art_expiry_set[0].version.content.polymorphic_ctype_id
+        self.research_expiry_set = ResearchProjectContentExpiryFactory.create_batch(2, expires=self.expiry_date)
+        self.research_expiry_c_type = self.research_expiry_set[0].version.content.polymorphic_ctype_id
+
+    def test_content_type_filter_lookup_values(self):
         """
-        Content type filter should only show relevant content type when filter is selected
+        The lookup values should match the values of versioned content types!
         """
-        date = datetime.datetime.now() + datetime.timedelta(days=5)
+        versioning_config = apps.get_app_config("djangocms_versioning")
+        filter = ContentTypeFilter(None, {'content_type': ''}, ContentExpiry, ContentExpiryAdmin)
 
-        poll_content_expiry = PollContentExpiryFactory(expires=date)
-        version = poll_content_expiry.version
+        # The list is equal to the content type versionables, get a unique list
+        content_type_list = set(
+            ctype for versionable in versioning_config.cms_extension.versionables
+            for ctype in versionable.content_types
+        )
+        lookup_choices = set(
+            ctype[0] for ctype in filter.lookup_choices
+        )
 
-        # Testing page content filter with polls content
-        content_type = f"?content_type={version.content_type.pk}&state={DRAFT}"
+        self.assertSetEqual(lookup_choices, content_type_list)
 
+    def test_content_type_filter_for_simple_models(self):
+        content_type = f"?content_type={self.poll_expiry_c_type}&state={DRAFT}"
         admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
 
         with self.login_user_context(self.get_superuser()):
@@ -211,7 +238,84 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
 
         self.assertQuerysetEqual(
             response.context["cl"].queryset,
-            [version.pk],
+            [self.poll_expiry.version.pk],
+            transform=lambda x: x.pk,
+            ordered=False,
+        )
+
+    def test_content_type_filter_for_root_polymorphic_models(self):
+        """
+        Root polymorphic models should be shown when the model is selected. No other models should be shown,
+        especially any concrete models that inherited from the polymorphic model.
+        """
+        content_type = f"?content_type={self.project_expiry_c_type}&state={DRAFT}"
+        admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(admin_endpoint + content_type)
+
+        self.assertQuerysetEqual(
+            response.context["cl"].queryset,
+            [self.project_expiry_set[0].version.pk, self.project_expiry_set[1].version.pk],
+            transform=lambda x: x.pk,
+            ordered=False,
+        )
+
+    def test_content_type_filter_for_concrete_art_polymorphic_models(self):
+        """
+        Specific concrete models should be shown when the model is selected. No other models should be shown,
+        especially any other models that inherit from the polymorphic model.
+        """
+        content_type = f"?content_type={self.art_expiry_c_type}&state={DRAFT}"
+        admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(admin_endpoint + content_type)
+
+        self.assertQuerysetEqual(
+            response.context["cl"].queryset,
+            [self.art_expiry_set[0].version.pk, self.art_expiry_set[1].version.pk],
+            transform=lambda x: x.pk,
+            ordered=False,
+        )
+
+    def test_content_type_filter_for_concrete_research_polymorphic_models(self):
+        """
+        Specific concrete models should be shown when the model is selected. No other models should be shown,
+        especially any other models that inherit from the polymorphic model.
+        """
+        content_type = f"?content_type={self.research_expiry_c_type}&state={DRAFT}"
+        admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(admin_endpoint + content_type)
+
+        self.assertQuerysetEqual(
+            response.context["cl"].queryset,
+            [self.research_expiry_set[0].version.pk, self.research_expiry_set[1].version.pk],
+            transform=lambda x: x.pk,
+            ordered=False,
+        )
+
+    def test_content_type_filter_for_mix_of_concrete_and_root_polymorphic_models(self):
+        """
+        Specific concrete and root models should be shown when the models are selected.
+        No other models should be shown, especially any other models that inherit from the polymorphic model.
+        """
+        content_type = f"?content_type={self.project_expiry_c_type},{self.art_expiry_c_type}&state={DRAFT}"
+        admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(admin_endpoint + content_type)
+
+        self.assertQuerysetEqual(
+            response.context["cl"].queryset,
+            [
+                self.project_expiry_set[0].version.pk,
+                self.project_expiry_set[1].version.pk,
+                self.art_expiry_set[0].version.pk,
+                self.art_expiry_set[1].version.pk,
+             ],
             transform=lambda x: x.pk,
             ordered=False,
         )
@@ -595,8 +699,10 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         versioning_config = apps.get_app_config("djangocms_versioning")
 
         # The list is equal to the content type versionables
-        content_type_list = [item for versionable in versioning_config.cms_extension.versionables
-                             for item in versionable.content_types]
+        content_type_list = list(set(
+            item for versionable in versioning_config.cms_extension.versionables
+            for item in versionable.content_types
+        ))
 
         self.assertCountEqual(
             field_content_type.choices.queryset.values_list('id', flat=True),
@@ -614,8 +720,10 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         versioning_config = apps.get_app_config("djangocms_versioning")
 
         # The list is equal to the content type versionables
-        content_type_list = [item for versionable in versioning_config.cms_extension.versionables
-                             for item in versionable.content_types]
+        content_type_list = list(set(
+            item for versionable in versioning_config.cms_extension.versionables
+            for item in versionable.content_types
+        ))
 
         # We have to delete the reserved entry because it now exists!
         content_type_list.remove(poll_content_expiry.version.content_type.id)
