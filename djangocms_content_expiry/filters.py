@@ -44,13 +44,25 @@ class ContentTypeFilter(SimpleListMultiselectFilter):
             list.append((value.pk, value))
         return list
 
-    def queryset(self, request, queryset):
-        content_types = self.value()
+    @staticmethod
+    def _filter_content_type_polymorphic_content(request, queryset):
+        """
+        Filter any polymorphic content types by their concrete implementation.
+
+        :param request: a request object
+        :param queryset: a queryset object
+        :returns: The original queryset, or polymorphic attached filters
+                  if a polymorphic content type is set
+        """
+        content_types = request.GET.get(ContentTypeFilter.parameter_name)
+
         if not content_types:
             return queryset
 
         filters = []
         for content_type in content_types.split(','):
+            # Sanitize the value input by the user before using it anywhere
+            content_type = int(content_type)
             content_type_obj = ContentType.objects.get_for_id(content_type)
             content_type_model = content_type_obj.model_class()
 
@@ -58,7 +70,7 @@ class ContentTypeFilter(SimpleListMultiselectFilter):
             if hasattr(content_type_model, "polymorphic_ctype"):
                 # Ideally we would reverse query like so, this is sadly not possible due to limitations
                 # in django polymorphic. The reverse capability is removed by adding + to the ctype foreign key :-(
-                # If polymorphic ever includes a reverse query capability this is all that is eeded
+                # If polymorphic ever includes a reverse query capability this is all that is needed
                 # related_query_name = f"{content_type_model._meta.app_label}_{content_type_model._meta.model_name}"
                 # filters.append(Q(**{
                 #     f"version__{related_query_name}__polymorphic_ctype": content_type_obj,
@@ -76,11 +88,30 @@ class ContentTypeFilter(SimpleListMultiselectFilter):
                         content_type_inclusion_list.append(expiry_record.id)
 
                 filters.append(Q(id__in=content_type_inclusion_list))
+
+        if filters:
+            return queryset.filter(reduce(lambda x, y: x | y, filters))
+
+        return queryset
+
+    def queryset(self, request, queryset):
+        content_types = self.value()
+        if not content_types:
+            return queryset
+
+        filters = []
+        for content_type in content_types.split(','):
+            content_type_obj = ContentType.objects.get_for_id(content_type)
+            content_type_model = content_type_obj.model_class()
+
             # For simple models simply filter by the content type
-            else:
+            if not hasattr(content_type_model, "polymorphic_ctype"):
                 filters.append(Q(version__content_type=content_type_obj))
 
-        return queryset.filter(reduce(lambda x, y: x | y, filters))
+        if filters:
+            return queryset.filter(reduce(lambda x, y: x | y, filters))
+
+        return queryset
 
     def choices(self, changelist):
         yield {
