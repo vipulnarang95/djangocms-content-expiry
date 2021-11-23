@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+0.0.6 (2021-11-23)
+==================
 * fix: Content Expiry Changelist: Removed polymorphic model support due to persistant timeouts and low performance
 
 0.0.5 (2021-11-16)
