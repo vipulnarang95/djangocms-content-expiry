@@ -1,9 +1,6 @@
-from functools import reduce
-
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from djangocms_versioning.constants import PUBLISHED, VERSION_STATES
@@ -38,80 +35,25 @@ class ContentTypeFilter(SimpleListMultiselectFilter):
     template = 'djangocms_content_expiry/multiselect_filter.html'
 
     def lookups(self, request, model_admin):
-        list = []
-        for content_type in _cms_extension().versionables_by_content:
-            value = ContentType.objects.get_for_model(content_type)
-            list.append((value.pk, value))
-        return list
-
-    @staticmethod
-    def _filter_content_type_polymorphic_content(request, queryset):
-        """
-        Filter any polymorphic content types by their concrete implementation.
-
-        :param request: a request object
-        :param queryset: a queryset object
-        :returns: The original queryset, or polymorphic attached filters
-                  if a polymorphic content type is set
-        """
-        content_types = request.GET.get(ContentTypeFilter.parameter_name)
-
-        if not content_types:
-            return queryset
-
-        filters = []
-        for content_type in content_types.split(','):
-            # Sanitize the value input by the user before using it anywhere
-            content_type = int(content_type)
-            content_type_obj = ContentType.objects.get_for_id(content_type)
-            content_type_model = content_type_obj.model_class()
-
-            # Handle any complex polymorphic models
-            if hasattr(content_type_model, "polymorphic_ctype"):
-                # Ideally we would reverse query like so, this is sadly not possible due to limitations
-                # in django polymorphic. The reverse capability is removed by adding + to the ctype foreign key :-(
-                # If polymorphic ever includes a reverse query capability this is all that is needed
-                # related_query_name = f"{content_type_model._meta.app_label}_{content_type_model._meta.model_name}"
-                # filters.append(Q(**{
-                #     f"version__{related_query_name}__polymorphic_ctype": content_type_obj,
-                # }))
-
-                # Get all objects for the base model and then filter by the polymorphic content type
-                content_type_inclusion_list = []
-                base_content_model = get_base_polymorphic_model(content_type_model)
-                base_content_type = ContentType.objects.get_for_model(base_content_model)
-
-                for expiry_record in queryset.filter(version__content_type=base_content_type):
-                    content = expiry_record.version.content
-                    # If the record's polymorphic content type matches the selected content type include it.
-                    if content.polymorphic_ctype_id == content_type_obj.pk:
-                        content_type_inclusion_list.append(expiry_record.id)
-
-                filters.append(Q(id__in=content_type_inclusion_list))
-
-        if filters:
-            return queryset.filter(reduce(lambda x, y: x | y, filters))
-
-        return queryset
+        lookup_list = []
+        for content_model in _cms_extension().versionables_by_content:
+            # Only add references to the inherited concrete model i.e. not referenced polymorphic models
+            if hasattr(content_model, "polymorphic_ctype"):
+                content_model = get_base_polymorphic_model(content_model)
+            # Create an entry
+            content_type = ContentType.objects.get_for_model(content_model)
+            lookup_list_entry = (content_type.pk, content_type)
+            # Only add unique entries
+            if lookup_list_entry not in lookup_list:
+                lookup_list.append(lookup_list_entry)
+        return lookup_list
 
     def queryset(self, request, queryset):
         content_types = self.value()
         if not content_types:
             return queryset
 
-        filters = []
-        for content_type in content_types.split(','):
-            content_type_obj = ContentType.objects.get_for_id(content_type)
-            content_type_model = content_type_obj.model_class()
-
-            # For simple models simply filter by the content type
-            if not hasattr(content_type_model, "polymorphic_ctype"):
-                filters.append(Q(version__content_type=content_type_obj))
-
-        if filters:
-            return queryset.filter(reduce(lambda x, y: x | y, filters))
-
-        return queryset
+        return queryset.filter(version__content_type__in=content_types.split(','))
 
     def choices(self, changelist):
         yield {

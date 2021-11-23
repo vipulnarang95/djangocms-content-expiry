@@ -4,15 +4,10 @@ from .conf import DEFAULT_CONTENT_EXPIRY_DURATION
 from .models import DefaultContentExpiryConfiguration
 
 
-# FIXME: Due to time constraints this function is not covered by unit tests
 def _get_version_content_model_content_type(version):
     """
-    Returns a content type that describes the content, this is especially
-    important for polymorphic models which would otherwise return the wrong content type!
+    Returns a content type that describes the content
     """
-    # If the version identifies as a different content type, be sure to use it
-    if hasattr(version.content, "polymorphic_ctype"):
-        return version.content.polymorphic_ctype
     # Otherwise, use the content type registered by the version
     return version.content_type
 

@@ -1,12 +1,15 @@
 import datetime
+from unittest import skip
 from unittest.mock import patch
 
 from django.apps import apps
 from django.contrib import admin
+from django.contrib.contenttypes.models import ContentType
 
 from cms.test_utils.testcases import CMSTestCase
 
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
+from djangocms_versioning.datastructures import VersionableItemAlias
 from freezegun import freeze_time
 
 from djangocms_content_expiry.admin import ContentExpiryAdmin
@@ -216,15 +219,19 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         The lookup values should match the values of versioned content types!
         """
         versioning_config = apps.get_app_config("djangocms_versioning")
-        filter = ContentTypeFilter(None, {'content_type': ''}, ContentExpiry, ContentExpiryAdmin)
+        content_type_filter = ContentTypeFilter(None, {'content_type': ''}, ContentExpiry, ContentExpiryAdmin)
+
+        # Get a unique list of versionables that are not polymorphic
+        content_types = []
+        for versionable in versioning_config.cms_extension.versionables:
+            if not isinstance(versionable, VersionableItemAlias):
+                content_type = ContentType.objects.get_for_model(versionable.content_model)
+                content_types.append(content_type.pk)
 
         # The list is equal to the content type versionables, get a unique list
-        content_type_list = set(
-            ctype for versionable in versioning_config.cms_extension.versionables
-            for ctype in versionable.content_types
-        )
+        content_type_list = set(content_types)
         lookup_choices = set(
-            ctype[0] for ctype in filter.lookup_choices
+            ctype[0] for ctype in content_type_filter.lookup_choices
         )
 
         self.assertSetEqual(lookup_choices, content_type_list)
@@ -256,11 +263,19 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
 
         self.assertQuerysetEqual(
             response.context["cl"].queryset,
-            [self.project_expiry_set[0].version.pk, self.project_expiry_set[1].version.pk],
+            [
+                self.project_expiry_set[0].version.pk,
+                self.project_expiry_set[1].version.pk,
+                self.art_expiry_set[0].version.pk,
+                self.art_expiry_set[1].version.pk,
+                self.research_expiry_set[0].version.pk,
+                self.research_expiry_set[1].version.pk,
+            ],
             transform=lambda x: x.pk,
             ordered=False,
         )
 
+    @skip("Polymorphic filtering support is currently not supported due to slow performance")
     def test_content_type_filter_for_concrete_art_polymorphic_models(self):
         """
         Specific concrete models should be shown when the model is selected. No other models should be shown,
@@ -279,6 +294,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
             ordered=False,
         )
 
+    @skip("Polymorphic filtering support is currently not supported due to slow performance")
     def test_content_type_filter_for_concrete_research_polymorphic_models(self):
         """
         Specific concrete models should be shown when the model is selected. No other models should be shown,
@@ -297,6 +313,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
             ordered=False,
         )
 
+    @skip("Polymorphic filtering support is currently not supported due to slow performance")
     def test_content_type_filter_for_mix_of_concrete_and_root_polymorphic_models(self):
         """
         Specific concrete and root models should be shown when the models are selected.
