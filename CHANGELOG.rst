@@ -4,6 +4,7 @@ Changelog
 
 unreleased
 ==========
+* fix: CSV Export contains the polymorphic content type when it shouldn't
 
 0.0.6 (2021-11-23)
 ==================

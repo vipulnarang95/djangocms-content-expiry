@@ -24,6 +24,9 @@ from djangocms_content_expiry.test_utils.factories import (
     DefaultContentExpiryConfigurationFactory,
 )
 from djangocms_content_expiry.test_utils.polls.factories import PollContentExpiryFactory
+from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
+    ArtProjectContentExpiryFactory,
+)
 
 
 class ContentExpiryAdminViewsPermissionsTestCase(CMSTestCase):
@@ -216,8 +219,10 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
         is exported as UTC so the date time will be converted hence the need to use a timezone aware
         datetime expiry date object.
         """
-        content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
-        preview_url = content_expiry.version.content.get_preview_url()
+        art_content_expiry = ArtProjectContentExpiryFactory(expires=self.date, version__state=DRAFT)
+        art_preview_url = art_content_expiry.version.content.get_preview_url()
+        poll_content_expiry = PollContentExpiryFactory(expires=self.date, version__state=DRAFT)
+        poll_preview_url = poll_content_expiry.version.content.get_preview_url()
 
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(self.export_admin_endpoint)
@@ -225,20 +230,21 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
         self.assertEqual(response.status_code, 200)
 
         csv_lines = response.content.decode().splitlines()
+
+        # The following contents should be present for poll
         content_row_1 = csv_lines[1].split(",")
 
-        # The following contents should be present
         self.assertEqual(
             content_row_1[self.headings_map["title"]],
-            content_expiry.version.content.text
+            poll_content_expiry.version.content.text
         )
         self.assertEqual(
             content_row_1[self.headings_map["ctype"]],
-            content_expiry.version.content_type.name
+            poll_content_expiry.version.content_type.name
         )
         self.assertEqual(
             content_row_1[self.headings_map["expiry_date"]],
-            content_expiry.expires.strftime(DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT)
+            poll_content_expiry.expires.strftime(DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT)
         )
         self.assertEqual(
             content_row_1[self.headings_map["version_state"]],
@@ -246,15 +252,47 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
         )
         self.assertEqual(
             content_row_1[self.headings_map["version_author"]],
-            content_expiry.version.created_by.username
+            poll_content_expiry.version.created_by.username
         )
         self.assertNotEqual(
             content_row_1[self.headings_map["url"]],
-            preview_url
+            poll_preview_url
         )
         self.assertEqual(
             content_row_1[self.headings_map["url"]],
-            response.wsgi_request.build_absolute_uri(preview_url)
+            response.wsgi_request.build_absolute_uri(poll_preview_url)
+        )
+
+        # The following contents should be present for art
+        content_row_2 = csv_lines[2].split(",")
+
+        self.assertEqual(
+            content_row_2[self.headings_map["title"]],
+            art_content_expiry.version.content.artist
+        )
+        self.assertEqual(
+            content_row_2[self.headings_map["ctype"]],
+            art_content_expiry.version.content_type.name
+        )
+        self.assertEqual(
+            content_row_2[self.headings_map["expiry_date"]],
+            art_content_expiry.expires.strftime(DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT)
+        )
+        self.assertEqual(
+            content_row_2[self.headings_map["version_state"]],
+            "Draft"
+        )
+        self.assertEqual(
+            content_row_2[self.headings_map["version_author"]],
+            art_content_expiry.version.created_by.username
+        )
+        self.assertNotEqual(
+            content_row_2[self.headings_map["url"]],
+            art_preview_url
+        )
+        self.assertEqual(
+            content_row_2[self.headings_map["url"]],
+            response.wsgi_request.build_absolute_uri(art_preview_url)
         )
 
     def test_export_button_is_visible(self):

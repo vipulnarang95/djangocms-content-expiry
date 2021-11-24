@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.urls import re_path
 
 from .models import (
     ArtProjectContent,
@@ -6,11 +7,19 @@ from .models import (
     ProjectGrouper,
     ResearchProjectContent,
 )
+from .views import PreviewView
 
 
-@admin.register(ArtProjectContent)
-class ArtProjectContentAdmin(admin.ModelAdmin):
-    pass
+class VersionedContentAdmin(admin.ModelAdmin):
+    def get_urls(self):
+        info = self.model._meta.app_label, self.model._meta.model_name
+        return [
+            re_path(
+                r"^(?P<id>\d+)/preview/$",
+                self.admin_site.admin_view(PreviewView.as_view()),
+                name="{}_{}_preview".format(*info),
+            )
+        ] + super().get_urls()
 
 
 @admin.register(ProjectGrouper)
@@ -19,10 +28,15 @@ class ProjectGrouperAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProjectContent)
-class ProjectContentAdmin(admin.ModelAdmin):
+class ProjectContentAdmin(VersionedContentAdmin):
+    pass
+
+
+@admin.register(ArtProjectContent)
+class ArtProjectContentAdmin(VersionedContentAdmin):
     pass
 
 
 @admin.register(ResearchProjectContent)
-class ResearchProjectContentAdmin(admin.ModelAdmin):
+class ResearchProjectContentAdmin(VersionedContentAdmin):
     pass

@@ -4,7 +4,6 @@ import datetime
 from django.apps import apps
 from django.conf.urls import url
 from django.contrib import admin
-from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -228,7 +227,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
         ])
 
         for content_expiry in queryset:
-            content_type = ContentType.objects.get_for_model(content_expiry.version.content)
+            content_type = self.content_type(content_expiry)
             expiry_date = self._format_export_datetime(content_expiry.expires)
             version_state = content_expiry.version.get_state_display()
             # Get an external / sharable link
