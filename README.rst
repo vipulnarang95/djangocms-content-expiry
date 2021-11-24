@@ -96,6 +96,20 @@ Run::
 
     python manage.py create_existing_versions_expiry_records
 
+
+Options
+    --expiry_date A datetime string: 2030-05-30
+    --expiry_date_format Defaults to: %Y-%m-%d
+
+To bypass the default behaviour you can force all expiry records created to use a date provided as a string.
+A format can also be provided if the user supplied date needs to add a time or more information to the Python datetime.strptime function.
+
+Run::
+
+    python manage.py create_existing_versions_expiry_records --expiry_date 2030-05-30 --expiry_date_format %Y-%m-%d
+
+
+
 Testing
 =======
 
