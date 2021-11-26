@@ -1,4 +1,8 @@
+from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
+
 from dateutil.relativedelta import relativedelta
+from djangocms_versioning.datastructures import VersionableItemAlias
 
 from .conf import DEFAULT_CONTENT_EXPIRY_DURATION
 from .models import DefaultContentExpiryConfiguration
@@ -31,3 +35,17 @@ def get_future_expire_date(version, date):
     Returns a date that will expire after a default period that can differ per content type
     """
     return date + get_default_duration_for_version(version)
+
+
+def get_versionable_content_types():
+    """
+    Returns a list of content type objects that are versioned
+    """
+    content_types = []
+    versioning_config = apps.get_app_config("djangocms_versioning")
+
+    for versionable in versioning_config.cms_extension.versionables:
+        if not isinstance(versionable, VersionableItemAlias):
+            content_type = ContentType.objects.get_for_model(versionable.content_model)
+            content_types.append(content_type)
+    return content_types

@@ -1,14 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 
 from djangocms_versioning.constants import PUBLISHED, VERSION_STATES
-from djangocms_versioning.versionables import _cms_extension
-from polymorphic.utils import get_base_polymorphic_model
 from rangefilter.filters import DateRangeFilter
 
 from .helpers import get_rangefilter_expires_default
+from .utils import get_versionable_content_types
 
 
 class SimpleListMultiselectFilter(admin.SimpleListFilter):
@@ -36,12 +34,7 @@ class ContentTypeFilter(SimpleListMultiselectFilter):
 
     def lookups(self, request, model_admin):
         lookup_list = []
-        for content_model in _cms_extension().versionables_by_content:
-            # Only add references to the inherited concrete model i.e. not referenced polymorphic models
-            if hasattr(content_model, "polymorphic_ctype"):
-                content_model = get_base_polymorphic_model(content_model)
-            # Create an entry
-            content_type = ContentType.objects.get_for_model(content_model)
+        for content_type in get_versionable_content_types():
             lookup_list_entry = (content_type.pk, content_type)
             # Only add unique entries
             if lookup_list_entry not in lookup_list:

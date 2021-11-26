@@ -4,6 +4,7 @@ Changelog
 
 unreleased
 ==========
+* fix: Polymorphic models incorrectly showing in the Default Content Type model configuration form
 
 0.0.7 (2021-11-24)
 ==================

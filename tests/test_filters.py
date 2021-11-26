@@ -2,14 +2,11 @@ import datetime
 from unittest import skip
 from unittest.mock import patch
 
-from django.apps import apps
 from django.contrib import admin
-from django.contrib.contenttypes.models import ContentType
 
 from cms.test_utils.testcases import CMSTestCase
 
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
-from djangocms_versioning.datastructures import VersionableItemAlias
 from freezegun import freeze_time
 
 from djangocms_content_expiry.admin import ContentExpiryAdmin
@@ -29,6 +26,7 @@ from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
     ProjectContentExpiryFactory,
     ResearchProjectContentExpiryFactory,
 )
+from djangocms_content_expiry.test_utils.utils import _get_content_types_set
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
@@ -218,18 +216,8 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         """
         The lookup values should match the values of versioned content types!
         """
-        versioning_config = apps.get_app_config("djangocms_versioning")
         content_type_filter = ContentTypeFilter(None, {'content_type': ''}, ContentExpiry, ContentExpiryAdmin)
-
-        # Get a unique list of versionables that are not polymorphic
-        content_types = []
-        for versionable in versioning_config.cms_extension.versionables:
-            if not isinstance(versionable, VersionableItemAlias):
-                content_type = ContentType.objects.get_for_model(versionable.content_model)
-                content_types.append(content_type.pk)
-
-        # The list is equal to the content type versionables, get a unique list
-        content_type_list = set(content_types)
+        content_type_list = _get_content_types_set()
         lookup_choices = set(
             ctype[0] for ctype in content_type_filter.lookup_choices
         )
@@ -713,13 +701,12 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         """
         form = admin.site._registry[DefaultContentExpiryConfiguration].form()
         field_content_type = form.fields['content_type']
-        versioning_config = apps.get_app_config("djangocms_versioning")
 
         # The list is equal to the content type versionables
-        content_type_list = list(set(
-            item for versionable in versioning_config.cms_extension.versionables
-            for item in versionable.content_types
-        ))
+        content_type_set = _get_content_types_set()
+        content_type_list = list(
+            content_type_set
+        )
 
         self.assertCountEqual(
             field_content_type.choices.queryset.values_list('id', flat=True),
@@ -734,13 +721,10 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
 
         form = admin.site._registry[DefaultContentExpiryConfiguration].form()
         field_content_type = form.fields['content_type']
-        versioning_config = apps.get_app_config("djangocms_versioning")
 
         # The list is equal to the content type versionables
-        content_type_list = list(set(
-            item for versionable in versioning_config.cms_extension.versionables
-            for item in versionable.content_types
-        ))
+        content_type_set = _get_content_types_set()
+        content_type_list = list(content_type_set)
 
         # We have to delete the reserved entry because it now exists!
         content_type_list.remove(poll_content_expiry.version.content_type.id)

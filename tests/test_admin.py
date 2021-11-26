@@ -1,6 +1,5 @@
 import datetime
 
-from django.apps import apps
 from django.contrib import admin
 from django.contrib.sites.models import Site
 from django.contrib.sites.shortcuts import get_current_site
@@ -27,6 +26,7 @@ from djangocms_content_expiry.test_utils.polls.factories import PollContentExpir
 from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
     ArtProjectContentExpiryFactory,
 )
+from djangocms_content_expiry.test_utils.utils import _get_content_types_set
 
 
 class ContentExpiryAdminViewsPermissionsTestCase(CMSTestCase):
@@ -412,13 +412,10 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         """
         form = admin.site._registry[DefaultContentExpiryConfiguration].form()
         field_content_type = form.fields['content_type']
-        versioning_config = apps.get_app_config("djangocms_versioning")
 
         # The list is equal to the content type versionables, get a unique list
-        content_type_list = list(set(
-            item for versionable in versioning_config.cms_extension.versionables
-            for item in versionable.content_types
-        ))
+        content_type_set = _get_content_types_set()
+        content_type_list = list(content_type_set)
 
         self.assertCountEqual(
             field_content_type.choices.queryset.values_list('id', flat=True),
@@ -433,13 +430,10 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
 
         form = admin.site._registry[DefaultContentExpiryConfiguration].form()
         field_content_type = form.fields['content_type']
-        versioning_config = apps.get_app_config("djangocms_versioning")
 
         # The list is equal to the content type versionables, get a unique list
-        content_type_list = list(set(
-            item for versionable in versioning_config.cms_extension.versionables
-            for item in versionable.content_types
-        ))
+        content_type_set = _get_content_types_set()
+        content_type_list = list(content_type_set)
 
         # We have to delete the reserved entry because it now exists!
         content_type_list.remove(poll_content_expiry.version.content_type.id)
