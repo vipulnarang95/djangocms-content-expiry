@@ -238,9 +238,9 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
             content_row_1[self.headings_map["title"]],
             poll_content_expiry.version.content.text
         )
-        self.assertEqual(
-            content_row_1[self.headings_map["ctype"]],
-            poll_content_expiry.version.content_type.name
+        self.assertIn(
+            poll_content_expiry.version.content_type.name,
+            content_row_1[self.headings_map["ctype"]]
         )
         self.assertEqual(
             content_row_1[self.headings_map["expiry_date"]],
@@ -270,9 +270,9 @@ class ContentExpiryCsvExportFileTestCase(CMSTestCase):
             content_row_2[self.headings_map["title"]],
             art_content_expiry.version.content.artist
         )
-        self.assertEqual(
-            content_row_2[self.headings_map["ctype"]],
-            art_content_expiry.version.content_type.name
+        self.assertIn(
+            art_content_expiry.version.content_type.name,
+            content_row_2[self.headings_map["ctype"]]
         )
         self.assertEqual(
             content_row_2[self.headings_map["expiry_date"]],

@@ -1,4 +1,5 @@
 HELPER_SETTINGS = {
+    "SECRET_KEY": "djangocms-content-expiry-tests",
     "TIME_ZONE": "America/Chicago",
     "INSTALLED_APPS": [
         "djangocms_alias",
@@ -66,6 +67,7 @@ HELPER_SETTINGS = {
     },
     "PARLER_ENABLE_CACHING": False,
     "LANGUAGE_CODE": "en",
+    "DEFAULT_AUTO_FIELD": "django.db.models.AutoField",
 }
 
 
