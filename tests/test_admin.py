@@ -83,6 +83,7 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
 
         decoded_response = response.content.decode("utf-8")
 
+        self.assertIn('compliance_number', decoded_response)
         self.assertIn('name="created_by"', decoded_response)
         self.assertIn('name="version"', decoded_response)
         self.assertIn('name="expires_0"', decoded_response)

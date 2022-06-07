@@ -50,6 +50,7 @@ class PollContentWithVersionFactory(PollContentFactory):
 
 @factory.django.mute_signals(pre_version_operation, post_version_operation)
 class PollContentExpiryFactory(factory.django.DjangoModelFactory):
+    compliance_number = FuzzyText(length=15)
     created_by = factory.SubFactory(UserFactory)
     version = factory.SubFactory(PollVersionFactory)
     expires = factory.Faker('date_time', tzinfo=timezone.get_current_timezone())
