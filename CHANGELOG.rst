@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+1.1.0 (2022-06-15)
+==================
 * feat: Change view title and icon tooltips name changed
 * feat: Added compliance number field
 
