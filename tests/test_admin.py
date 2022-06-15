@@ -3,13 +3,14 @@ import datetime
 from django.contrib import admin
 from django.contrib.sites.models import Site
 from django.contrib.sites.shortcuts import get_current_site
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from django.utils import timezone
 
 from cms.api import create_page
 from cms.models import PageContent
 from cms.test_utils.testcases import CMSTestCase
 
+from bs4 import BeautifulSoup
 from djangocms_versioning.constants import DRAFT, PUBLISHED
 
 from djangocms_content_expiry.admin import ContentExpiryAdmin
@@ -89,6 +90,19 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
         self.assertIn('name="expires_0"', decoded_response)
         self.assertIn('name="expires_1"', decoded_response)
 
+    def test_change_form_title(self):
+        """
+        The change form title is populated with the custom value
+        """
+        content_expiry = PollContentExpiryFactory()
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context_data['title'], 'Additional content settings')
+
 
 class ContentExpiryChangelistTestCase(CMSTestCase):
     def setUp(self):
@@ -138,6 +152,22 @@ class ContentExpiryChangelistTestCase(CMSTestCase):
         self.assertEqual(
             self.site._registry[ContentExpiry]._get_preview_url(content_expiry),
             poll_content.get_preview_url()
+        )
+
+    def test_change_icon_tooltip(self):
+        """
+        The change list presents the correct tooltip when hovering over the change expiry icon
+        """
+        content_expiry = PollContentExpiryFactory(version__state=DRAFT)
+        request = RequestFactory().get("/admin/djangocms_content_expiry/")
+        edit_link = self.site._registry[ContentExpiry]._get_edit_link(content_expiry, request)
+
+        soup = BeautifulSoup(str(edit_link), features="lxml")
+        actual_link = soup.find("a")
+        link_title_tooltip = actual_link.get("title")
+
+        self.assertEqual(
+            link_title_tooltip, 'Additional content settings'
         )
 
 

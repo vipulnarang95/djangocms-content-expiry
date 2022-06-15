@@ -1,4 +1,5 @@
 argparse
+beautifulsoup4
 coverage<5
 dj-database-url
 django-admin-rangefilter
@@ -11,6 +12,7 @@ djangocms-admin-style>=1.5
 factory-boy
 freezegun
 iptools
+lxml
 mock>=2.0.0
 pyenchant
 pyflakes==1.1.0
