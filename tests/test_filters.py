@@ -764,3 +764,29 @@ class DefaultContentExpiryConfigurationAdminViewsFormsTestCase(CMSTestCase):
         field_content_type = form.fields['content_type']
 
         self.assertEqual(field_content_type.widget.__class__, ForeignKeyReadOnlyWidget)
+
+
+class ContentExpiryChangelistComplianceNumberFilterTestCase(CMSTestCase):
+    def setUp(self):
+        self.date = datetime.datetime.now() + datetime.timedelta(days=5)
+        self.admin_endpoint = self.get_admin_url(ContentExpiry, "changelist")
+
+    def test_compliance_number_filter_boundaries(self):
+        """
+        Queryset should only contain content matching provided compliance number
+        """
+        content_expiry_1 = PollContentExpiryFactory(expires=self.date, compliance_number="12345678")
+        content_expiry_2 = PollContentExpiryFactory(expires=self.date, compliance_number="91012135")
+
+        compliance_number = f"?compliance_number={content_expiry_1.compliance_number}"
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(self.admin_endpoint + compliance_number)
+
+        response_content = response.content.decode()
+
+        # Endpoint is returning 200 status code
+        self.assertEqual(response.status_code, 200)
+        # Since we provided the compliance number from content_expiry_1, we expect this to be displayed
+        self.assertIn(content_expiry_1.compliance_number, response_content)
+        self.assertNotIn(content_expiry_2.compliance_number, response_content)

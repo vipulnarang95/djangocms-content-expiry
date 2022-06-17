@@ -16,6 +16,7 @@ from djangocms_versioning.helpers import get_preview_url
 from .conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
 from .filters import (
     AuthorFilter,
+    ComplianceNumberFilter,
     ContentExpiryDateRangeFilter,
     ContentTypeFilter,
     VersionStateFilter,
@@ -29,7 +30,8 @@ from .models import ContentExpiry, DefaultContentExpiryConfiguration
 class ContentExpiryAdmin(admin.ModelAdmin):
     list_display = ['title', 'content_type', 'expires', 'compliance_number', 'version_state', 'version_author']
     list_display_links = None
-    list_filter = (ContentTypeFilter, ('expires', ContentExpiryDateRangeFilter), VersionStateFilter, AuthorFilter)
+    list_filter = (ComplianceNumberFilter, ContentTypeFilter, ('expires', ContentExpiryDateRangeFilter),
+                   VersionStateFilter, AuthorFilter)
     form = ContentExpiryForm
     change_list_template = "djangocms_content_expiry/admin/change_list.html"
 
