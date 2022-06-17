@@ -27,7 +27,7 @@ from .models import ContentExpiry, DefaultContentExpiryConfiguration
 
 @admin.register(ContentExpiry)
 class ContentExpiryAdmin(admin.ModelAdmin):
-    list_display = ['title', 'content_type', 'expires', 'version_state', 'version_author']
+    list_display = ['title', 'content_type', 'expires', 'compliance_number', 'version_state', 'version_author']
     list_display_links = None
     list_filter = (ContentTypeFilter, ('expires', ContentExpiryDateRangeFilter), VersionStateFilter, AuthorFilter)
     form = ContentExpiryForm
@@ -71,6 +71,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             "title",
             "content_type",
             "expires",
+            "compliance_number",
             "version_state",
             "version_author",
             self.list_display_actions(request),
@@ -225,6 +226,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             'Title',
             'Content Type',
             'Expiry Date',
+            'Compliance Number',
             'Version State',
             'Version Author',
             'Url'
@@ -233,6 +235,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
         for content_expiry in queryset:
             content_type = self.content_type(content_expiry)
             expiry_date = self._format_export_datetime(content_expiry.expires)
+            compliance_number = content_expiry.compliance_number
             version_state = content_expiry.version.get_state_display()
             # Get an external / sharable link
             preview_url = self._get_preview_url(content_expiry)
@@ -242,6 +245,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
                 content_expiry.version.content,
                 content_type,
                 expiry_date,
+                compliance_number,
                 version_state,
                 content_expiry.version.created_by,
                 external_url,
