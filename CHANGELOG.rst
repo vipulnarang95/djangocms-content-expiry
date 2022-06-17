@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+1.2.0 (2022-06-17)
+==================
 * feat: Compliance number filter added
 * feat: Compliance number added to list display and csv export
 
