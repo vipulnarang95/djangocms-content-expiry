@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+1.2.1 (2022-06-20)
+==================
 * fix: Compliance number filter input limited to 15 characters
 
 1.2.0 (2022-06-17)
