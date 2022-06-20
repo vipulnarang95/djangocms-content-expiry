@@ -11,7 +11,8 @@
         <input
             type="text"
             value="{{ spec.value|default_if_none:'' }}"
-            name="{{ spec.parameter_name }}"/>
+            name="{{ spec.parameter_name }}"
+            maxlength="15"/>
         <input type="submit" class="button" value="Search">
         {% if not all_choice.selected %}
            <a href="{{ all_choice.query_string }}">⨉ {% trans 'Clear' %}</a>
