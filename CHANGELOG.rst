@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+1.3.1 (2022-06-22)
+==================
 * feat: Adding functionality to copy a compliance number to all items in a collection
 
 1.2.1 (2022-06-20)
