@@ -147,6 +147,31 @@ def content_expiry_site_alias_excluded_set(queryset, request):
     )
 
 
+def get_copy_compliance_number_button(obj):
+    """
+    Return a user friendly link to copy a content expiry compliance number to other Moderation Request Items
+    link redirects to view which handles this
+    """
+    version = obj.moderation_request.version
+
+    if hasattr(version, "contentexpiry"):
+        content_expiry = version.contentexpiry
+        view_endpoint = format_html(
+            "{}?collection__id={}&moderation_request__id={}&_popup=1&copy=compliance",
+            reverse("admin:djangocms_moderation_moderationrequesttreenode_copy"),
+            obj.moderation_request.collection.pk,
+            obj.moderation_request.pk,
+        )
+        return render_to_string(
+            "djangocms_content_expiry/admin/icons/compliance_copy_icon.html", {
+                "url": view_endpoint,
+                "content_expiry_id": f"content_expiry_{content_expiry.pk}",
+                "moderation_request_id": f"moderation_request_{obj.moderation_request.pk}"
+            }
+        )
+    return ""
+
+
 class ContentExpiryExtension(CMSAppExtension):
     def __init__(self):
         self.expiry_changelist_queryset_filters = []
@@ -173,6 +198,7 @@ class ContentExpiryAppConfig(CMSAppConfig):
     moderation_request_changelist_actions = [
         get_moderation_content_expiry_link,
         get_copy_content_expiry_button,
+        get_copy_compliance_number_button,
     ]
     moderation_request_changelist_fields = [
         get_expiry_date,

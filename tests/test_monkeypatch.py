@@ -156,3 +156,72 @@ class ContentExpiryMonkeyPatchTestCase(CMSTestCase):
         self.assertEqual(ContentExpiry.objects.count(), 1)
         # We should still be redirected
         self.assertEqual(response.status_code, 302)
+
+    def test_extended_moderation_admin_update_existing_compliance_number_record(self):
+        """
+        If the target of the copy already has a compliance number, the record should be updated, rather than recreated
+        """
+        # Create db data for additional content expiry!
+        self.content_expiry_secondary = factories.PollContentExpiryFactory(
+            expires=self.expires_secondary,
+            version__state=PUBLISHED
+        )
+        self.moderation_request2 = ModerationRequestFactory(
+            collection=self.collection,
+            version=self.content_expiry_secondary.version,
+        )
+        self.root2 = RootModerationRequestTreeNodeFactory(
+            moderation_request=self.moderation_request2
+        )
+        ChildModerationRequestTreeNodeFactory(
+            moderation_request=self.moderation_request1, parent=self.root1
+        )
+
+        # Check that compliance numbers are different before we hit the copy endpoint!
+        self.assertEqual(ContentExpiry.objects.count(), 2)
+        self.assertNotEqual(ContentExpiry.objects.first().compliance_number,
+                            ContentExpiry.objects.last().compliance_number)
+
+        response = self.client.post(self.url + "&copy=compliance")
+
+        # Ensure request is a redirect as expected!
+        self.assertEqual(response.status_code, 302)
+        # Since we already have two content expiry records, we should see an update rather than a creation
+        self.assertEqual(ContentExpiry.objects.count(), 2)
+        self.assertEqual(ContentExpiry.objects.first().compliance_number,
+                         ContentExpiry.objects.last().compliance_number)
+
+    def test_extended_moderation_admin_update_no_compliance_number_record(self):
+        """
+        If the user copies a content expiry to a moderation request which does not have a compliance number associated
+        with it, one should be not be created as it is not required
+        """
+        content_expiry = factories.PollContentExpiryFactory(
+            expires=self.expires_secondary,
+            version__state=PUBLISHED,
+            compliance_number="",
+        )
+        moderation_request = ModerationRequestFactory(
+            collection=self.collection,
+            version=content_expiry.version,
+        )
+        RootModerationRequestTreeNodeFactory(
+            moderation_request=moderation_request
+        )
+
+        # Check that compliance numbers are not set before we hit the copy endpoint!
+        content_expiry_record = ContentExpiry.objects.first()
+        # Removing the compliance number set in the setup
+        content_expiry_record.compliance_number = ""
+        # Both records should not contain a compliance number as it has not been set
+        self.assertEqual(content_expiry_record.compliance_number, "")
+        self.assertEqual(ContentExpiry.objects.last().compliance_number, "")
+
+        response = self.client.post(self.url + "&copy=compliance")
+
+        # Ensure request is a redirect as expected!
+        self.assertEqual(response.status_code, 302)
+        # The compliance number has not been added so should not be created in the copied versions
+        self.assertEqual(ContentExpiry.objects.count(), 2)
+        self.assertEqual(ContentExpiry.objects.first().compliance_number,
+                         ContentExpiry.objects.last().compliance_number)
