@@ -45,7 +45,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
         }
 
     def change_view(self, request, object_id, extra_context=None):
-        extra_context = {'title': 'Additional content settings'}
+        extra_context = {'title': 'Additional Content Settings'}
         return super(ContentExpiryAdmin, self).change_view(request, object_id, extra_context=extra_context)
 
     def get_queryset(self, request):

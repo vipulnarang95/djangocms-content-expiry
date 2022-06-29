@@ -101,7 +101,7 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
             response = self.client.get(endpoint)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context_data['title'], 'Additional content settings')
+        self.assertEqual(response.context_data['title'], 'Additional Content Settings')
 
 
 class ContentExpiryChangelistTestCase(CMSTestCase):
@@ -167,7 +167,7 @@ class ContentExpiryChangelistTestCase(CMSTestCase):
         link_title_tooltip = actual_link.get("title")
 
         self.assertEqual(
-            link_title_tooltip, 'Additional content settings'
+            link_title_tooltip, 'Additional Content Settings'
         )
 
 

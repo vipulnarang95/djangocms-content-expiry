@@ -5,6 +5,7 @@ Changelog
 unreleased
 ==========
 * feat: Expiry field removed from version table and replaced with compliance number. Added additional content settings action to version table
+* fix: Changed model title to uppercase
 
 1.3.1 (2022-06-22)
 ==================
