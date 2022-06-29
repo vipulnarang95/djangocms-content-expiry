@@ -11,7 +11,7 @@ from cms.models import PageContent
 from cms.test_utils.testcases import CMSTestCase
 
 from bs4 import BeautifulSoup
-from djangocms_versioning.constants import DRAFT, PUBLISHED
+from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
 
 from djangocms_content_expiry.admin import ContentExpiryAdmin
 from djangocms_content_expiry.conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
@@ -102,6 +102,80 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context_data['title'], 'Additional Content Settings')
+
+    def test_change_form_compliance_number_field_is_editable_when_draft_version(self):
+        """
+        Compliance number field should be an input field and editable when version is draft
+        """
+        content_expiry = PollContentExpiryFactory(version__state=DRAFT)
+
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+        draft_expected_content = f'<input type="text" name="compliance_number" ' \
+                                 f'value="{content_expiry.compliance_number}" ' \
+                                 f'class="vTextField" maxlength="15" id="id_compliance_number">'
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+
+        decoded_response = response.content.decode("utf-8")
+
+        self.assertIn(draft_expected_content, decoded_response)
+
+    def test_change_form_compliance_number_field_is_not_editable_in_published_version(self):
+        """
+        Compliance number field should not be editable when version is published
+        """
+        content_expiry = PollContentExpiryFactory(version__state=PUBLISHED)
+
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+        published_expected_response = f'<div class="readonly">{content_expiry.compliance_number}</div>'
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+
+        decoded_response = response.content.decode("utf-8")
+
+        self.assertIn(published_expected_response, decoded_response)
+
+    def test_change_form_compliance_number_field_is_not_editable_in_archived_version(self):
+        """
+        Compliance number field should not be editable when version is archived
+        """
+        content_expiry = PollContentExpiryFactory(version__state=ARCHIVED)
+
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+        archived_expected_response = f'<div class="readonly">{content_expiry.compliance_number}</div>'
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+
+        decoded_response = response.content.decode("utf-8")
+
+        self.assertIn(archived_expected_response, decoded_response)
+
+    def test_change_form_compliance_number_field_is_not_editable_in_unpublished_version(self):
+        """
+        Compliance number field should not be editable when version is unpublished
+        """
+        content_expiry = PollContentExpiryFactory(version__state=UNPUBLISHED)
+
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+        unpublished_expected_response = f'<div class="readonly">{content_expiry.compliance_number}</div>'
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+
+        decoded_response = response.content.decode("utf-8")
+
+        self.assertIn(unpublished_expected_response, decoded_response)
 
 
 class ContentExpiryChangelistTestCase(CMSTestCase):

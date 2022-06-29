@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils.html import format_html_join
 from django.utils.translation import ugettext_lazy as _
 
-from djangocms_versioning.constants import PUBLISHED
+from djangocms_versioning.constants import DRAFT, PUBLISHED
 from djangocms_versioning.helpers import get_preview_url
 
 from .conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
@@ -283,6 +283,17 @@ class ContentExpiryAdmin(admin.ModelAdmin):
         cl = changelist(**changelist_kwargs)
 
         return cl.get_queryset(request)
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Compliance number should only be editable in draft versions
+        :param request: Request object
+        :param obj: Content expiry object
+        :return: Read-only form fields
+        """
+        if obj and obj.version.state != DRAFT:
+            return self.readonly_fields + ('compliance_number',)
+        return self.readonly_fields
 
 
 @admin.register(DefaultContentExpiryConfiguration)
