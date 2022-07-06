@@ -15,6 +15,7 @@ from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISH
 
 from djangocms_content_expiry.admin import ContentExpiryAdmin
 from djangocms_content_expiry.conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
+from djangocms_content_expiry.constants import CONTENT_EXPIRY_FIELDSETS
 from djangocms_content_expiry.forms import ForeignKeyReadOnlyWidget
 from djangocms_content_expiry.models import (
     ContentExpiry,
@@ -176,6 +177,36 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
         decoded_response = response.content.decode("utf-8")
 
         self.assertIn(unpublished_expected_response, decoded_response)
+
+    def test_change_form_fieldset_ordering_draft(self):
+        """
+        The change form should remain in same order, starting with compliance number when in draft
+        """
+        content_expiry = PollContentExpiryFactory(version__state=DRAFT)
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+        expected_fieldset = CONTENT_EXPIRY_FIELDSETS
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        fieldsets = response.context_data['adminform'].fieldsets[0][1]['fields']
+
+        self.assertEqual(expected_fieldset, fieldsets)
+
+    def test_change_form_fieldset_ordering_published(self):
+        """
+        The change form should remain in same order, starting with compliance number when in published
+        """
+        content_expiry = PollContentExpiryFactory(version__state=PUBLISHED)
+        endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
+        expected_fieldset = CONTENT_EXPIRY_FIELDSETS
+
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(endpoint)
+
+        fieldsets = response.context_data['adminform'].fieldsets[0][1]['fields']
+
+        self.assertEqual(expected_fieldset, fieldsets)
 
 
 class ContentExpiryChangelistTestCase(CMSTestCase):

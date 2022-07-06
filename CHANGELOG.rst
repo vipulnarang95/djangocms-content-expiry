@@ -4,6 +4,7 @@ Changelog
 
 unreleased
 ==========
+* fix: Fieldsets should remain in the same order when compliance number is read only
 
 1.4.0 (2022-06-29)
 ==================

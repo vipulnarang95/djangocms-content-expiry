@@ -14,6 +14,7 @@ from djangocms_versioning.constants import DRAFT, PUBLISHED
 from djangocms_versioning.helpers import get_preview_url
 
 from .conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
+from .constants import CONTENT_EXPIRY_FIELDSETS
 from .filters import (
     AuthorFilter,
     ComplianceNumberFilter,
@@ -34,6 +35,11 @@ class ContentExpiryAdmin(admin.ModelAdmin):
                    VersionStateFilter, AuthorFilter)
     form = ContentExpiryForm
     change_list_template = "djangocms_content_expiry/admin/change_list.html"
+    fieldsets = (
+        (None, {
+            'fields': CONTENT_EXPIRY_FIELDSETS,
+        }),
+    )
 
     class Media:
         css = {
