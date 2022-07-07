@@ -47,6 +47,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
                 'djangocms_content_expiry/css/actions.css',
                 'djangocms_content_expiry/css/date_filter.css',
                 'djangocms_content_expiry/css/multiselect_filter.css',
+                'djangocms_content_expiry/css/forms_style.css',
             )
         }
 

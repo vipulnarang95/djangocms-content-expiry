@@ -1,0 +1,12 @@
+/*
+Compliance number is not a mandatory field and is certain scenarios read-only
+so below is required to make the labels and value field look consistent with other fields
+*/
+.field-compliance_number label {
+    color: #000!important;
+    font-weight: 700!important;
+}
+.field-compliance_number div {
+    margin-left: 0px!important;
+    margin-top: 0px!important;
+}
