@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+1.4.3 (2022-07-08)
+==================
 * fix: broken pop ups not closing on save
 
 1.4.2 (2022-07-07)
