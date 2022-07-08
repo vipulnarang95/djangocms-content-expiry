@@ -38,7 +38,7 @@ def get_moderation_content_expiry_link(obj):
     # If a content expiry record exists we can go to it
     if hasattr(version, "contentexpiry"):
         view_endpoint = format_html(
-            "{}?collection__id__exact={}&_popup=1",
+            "{}?collection__id__exact={}&_to_field=id&_popup=1",
             reverse("admin:djangocms_content_expiry_contentexpiry_change", args=[version.contentexpiry.pk]),
             obj.pk,
         )
@@ -75,7 +75,7 @@ def get_copy_content_expiry_button(obj):
     if hasattr(version, "contentexpiry"):
         content_expiry = version.contentexpiry
         view_endpoint = format_html(
-            "{}?collection__id={}&moderation_request__id={}&_popup=1",
+            "{}?collection__id={}&moderation_request__id={}&_to_field=id&_popup=1",
             reverse("admin:djangocms_moderation_moderationrequesttreenode_copy"),
             obj.moderation_request.collection.pk,
             obj.moderation_request.pk,
@@ -157,7 +157,7 @@ def get_copy_compliance_number_button(obj):
     if hasattr(version, "contentexpiry"):
         content_expiry = version.contentexpiry
         view_endpoint = format_html(
-            "{}?collection__id={}&moderation_request__id={}&_popup=1&copy=compliance",
+            "{}?collection__id={}&moderation_request__id={}&_to_field=id&_popup=1&copy=compliance",
             reverse("admin:djangocms_moderation_moderationrequesttreenode_copy"),
             obj.moderation_request.collection.pk,
             obj.moderation_request.pk,
