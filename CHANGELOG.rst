@@ -4,6 +4,9 @@ Changelog
 
 unreleased
 ==========
+
+1.4.2 (2022-07-07)
+==================
 * fix: Fixed inconsistency in Content Expiry form field UI behaviour for the compliance number
 
 1.4.1 (2022-07-06)
