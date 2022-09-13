@@ -113,7 +113,7 @@ class ContentExpiryChangeFormTestCase(CMSTestCase):
         endpoint = self.get_admin_url(ContentExpiry, "change", content_expiry.pk)
         draft_expected_content = f'<input type="text" name="compliance_number" ' \
                                  f'value="{content_expiry.compliance_number}" ' \
-                                 f'class="vTextField" maxlength="15" id="id_compliance_number">'
+                                 f'class="vTextField" maxlength="30" id="id_compliance_number">'
 
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(endpoint)

@@ -4,6 +4,7 @@ Changelog
 
 unreleased
 ==========
+* feat: Changed compliance number length to 30 characters
 
 1.4.3 (2022-07-08)
 ==================

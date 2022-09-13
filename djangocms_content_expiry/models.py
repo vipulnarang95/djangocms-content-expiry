@@ -23,7 +23,7 @@ def _limit_content_type_choices():
 
 class ContentExpiry(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    compliance_number = models.CharField(max_length=15, blank=True, null=True)
+    compliance_number = models.CharField(max_length=30, blank=True, null=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
