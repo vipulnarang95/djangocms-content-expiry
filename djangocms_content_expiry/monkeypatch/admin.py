@@ -1,7 +1,6 @@
-from django.conf.urls import url
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import re_path, reverse
 
 from djangocms_moderation import admin as moderation_admin
 from djangocms_moderation.models import ModerationCollection, ModerationRequest
@@ -80,7 +79,7 @@ def _get_urls(func):
     def inner(self, *args, **kwargs):
         url_list = func(self, *args, **kwargs)
         info = self.model._meta.app_label, self.model._meta.model_name
-        url_list.insert(0, url(
+        url_list.insert(0, re_path(
             r'^copy/',
             self.admin_site.admin_view(self.copy_content_expiry_view),
             name="{}_{}_copy".format(*info),
