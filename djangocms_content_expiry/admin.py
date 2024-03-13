@@ -292,7 +292,8 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             'list_max_show_all': self.list_max_show_all,
             'list_editable': self.list_editable,
             'model_admin': self,
-            'sortable_by': self.sortable_by
+            'sortable_by': self.sortable_by,
+            'search_help_text': self.search_help_text
         }
         cl = changelist(**changelist_kwargs)
 
