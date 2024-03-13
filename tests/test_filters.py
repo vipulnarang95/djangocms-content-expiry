@@ -10,6 +10,7 @@ from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISH
 from freezegun import freeze_time
 
 from djangocms_content_expiry.admin import ContentExpiryAdmin
+from djangocms_content_expiry.compat import DJANGO_4_2
 from djangocms_content_expiry.filters import ContentTypeFilter
 from djangocms_content_expiry.forms import ForeignKeyReadOnlyWidget
 from djangocms_content_expiry.models import (
@@ -27,6 +28,10 @@ from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
     ResearchProjectContentExpiryFactory,
 )
 from djangocms_content_expiry.test_utils.utils import _get_content_types_set
+
+
+if not DJANGO_4_2:
+    CMSTestCase.assertQuerySetEqual = CMSTestCase.assertQuerysetEqual
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
