@@ -1,7 +1,9 @@
 import django
 
-from cms.test_utils.testcases import CMSTestCase
+from packaging.version import Version
 
+DJANGO_4_2 = Version(django.get_version()) >= Version('4.2')
 
-if django.VERSION < (4, 2):  # TODO: remove when dropping support for Django < 4.2
+if not DJANGO_4_2:
+    from cms.test_utils.testcases import CMSTestCase
     CMSTestCase.assertQuerySetEqual = CMSTestCase.assertQuerysetEqual
