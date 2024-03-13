@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from djangocms_versioning.constants import DRAFT, PUBLISHED
 from djangocms_versioning.helpers import get_preview_url
 
+from .compat import DJANGO_4_2
 from .conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
 from .constants import CONTENT_EXPIRY_FIELDSETS
 from .filters import (
@@ -293,8 +294,9 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             'list_editable': self.list_editable,
             'model_admin': self,
             'sortable_by': self.sortable_by,
-            'search_help_text': self.search_help_text
         }
+        if DJANGO_4_2:
+            changelist_kwargs['search_help_text'] = self.search_help_text
         cl = changelist(**changelist_kwargs)
 
         return cl.get_queryset(request)
