@@ -9,7 +9,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html_join
 from django.utils.translation import gettext_lazy as _
 
-from cms.utils.compat import DJANGO_4_2
+from cms.utils.compat import DJANGO_3
 
 from djangocms_versioning.constants import DRAFT, PUBLISHED
 from djangocms_versioning.helpers import get_preview_url
@@ -296,7 +296,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             'model_admin': self,
             'sortable_by': self.sortable_by,
         }
-        if DJANGO_4_2 or DJANGO_4_1:
+        if not DJANGO_3:
             changelist_kwargs['search_help_text'] = self.search_help_text
         cl = changelist(**changelist_kwargs)
 

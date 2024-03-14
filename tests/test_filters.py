@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib import admin
 
 from cms.test_utils.testcases import CMSTestCase
-from cms.utils.compat import DJANGO_4_1, DJANGO_4_2
+from cms.utils.compat import DJANGO_3
 
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
 from freezegun import freeze_time
@@ -30,7 +30,7 @@ from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
 from djangocms_content_expiry.test_utils.utils import _get_content_types_set
 
 
-if not ( DJANGO_4_2 or DJANGO_4_1 ):
+if DJANGO_3:
     CMSTestCase.assertQuerySetEqual = CMSTestCase.assertQuerysetEqual
 
 
