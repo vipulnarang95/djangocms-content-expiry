@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.contrib import admin
 
 from cms.test_utils.testcases import CMSTestCase
+from cms.utils.compat import DJANGO_3
 
 from djangocms_versioning.constants import ARCHIVED, DRAFT, PUBLISHED, UNPUBLISHED
 from freezegun import freeze_time
@@ -27,6 +28,10 @@ from djangocms_content_expiry.test_utils.polymorphic_project.factories import (
     ResearchProjectContentExpiryFactory,
 )
 from djangocms_content_expiry.test_utils.utils import _get_content_types_set
+
+
+if DJANGO_3:
+    CMSTestCase.assertQuerySetEqual = CMSTestCase.assertQuerysetEqual
 
 
 class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
@@ -72,7 +77,7 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint)
 
         # Only contents in the date range should be returned
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [poll_content_2.version.pk,
              poll_content_3.version.pk,
@@ -129,7 +134,7 @@ class ContentExpiryChangelistExpiryFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + url_date_range)
 
         # Only contents in the date range should be returned
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [poll_content_2.version.pk,
              poll_content_3.version.pk,
@@ -174,7 +179,7 @@ class ContentExpiryAuthorFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint)
 
         # The results should not be filtered
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_author[0].pk, expiry_author[1].pk,
              expiry_other_authors[0].pk, expiry_other_authors[1].pk,
@@ -191,7 +196,7 @@ class ContentExpiryAuthorFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + author_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_author[0].pk, expiry_author[1].pk],
             transform=lambda x: x.pk,
@@ -231,7 +236,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + content_type)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [self.poll_expiry.version.pk],
             transform=lambda x: x.pk,
@@ -249,7 +254,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + content_type)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [
                 self.project_expiry_set[0].version.pk,
@@ -275,7 +280,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + content_type)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [self.art_expiry_set[0].version.pk, self.art_expiry_set[1].version.pk],
             transform=lambda x: x.pk,
@@ -294,7 +299,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + content_type)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [self.research_expiry_set[0].version.pk, self.research_expiry_set[1].version.pk],
             transform=lambda x: x.pk,
@@ -313,7 +318,7 @@ class ContentExpiryContentTypeFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + content_type)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [
                 self.project_expiry_set[0].version.pk,
@@ -350,7 +355,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_published_list[0].pk, expiry_published_list[1].pk],
             transform=lambda x: x.pk,
@@ -380,7 +385,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + version_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_draft_list[0].pk, expiry_draft_list[1].pk],
             transform=lambda x: x.pk,
@@ -395,7 +400,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + version_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_published_list[0].pk, expiry_published_list[1].pk],
             transform=lambda x: x.pk,
@@ -410,7 +415,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + version_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_archived_list[0].pk, expiry_archived_list[1].pk],
             transform=lambda x: x.pk,
@@ -425,7 +430,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + version_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_unpublished_list[0].pk, expiry_unpublished_list[1].pk],
             transform=lambda x: x.pk,
@@ -455,7 +460,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + version_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_archived_list[0].pk, expiry_archived_list[1].pk,
              expiry_unpublished_list[0].pk, expiry_unpublished_list[1].pk, ],
@@ -471,7 +476,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
             response = self.client.get(admin_endpoint + version_selection)
 
         # When an author is selected in the filter only the author selected content expiry are shown
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_draft_list[0].pk, expiry_draft_list[1].pk,
              expiry_published_list[0].pk, expiry_published_list[1].pk,
@@ -499,7 +504,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + version_selection)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_draft.pk, expiry_published.pk,
              expiry_archived.pk, expiry_unpublished.pk, ],
@@ -514,7 +519,7 @@ class ContentExpiryChangelistVersionFilterTestCase(CMSTestCase):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(admin_endpoint + version_selection)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             response.context["cl"].queryset,
             [expiry_draft.pk],
             transform=lambda x: x.pk,

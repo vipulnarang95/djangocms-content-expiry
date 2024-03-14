@@ -2,13 +2,14 @@ import csv
 import datetime
 
 from django.apps import apps
-from django.conf.urls import url
 from django.contrib import admin
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import path, reverse
 from django.utils.html import format_html_join
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+
+from cms.utils.compat import DJANGO_3
 
 from djangocms_versioning.constants import DRAFT, PUBLISHED
 from djangocms_versioning.helpers import get_preview_url
@@ -89,8 +90,8 @@ class ContentExpiryAdmin(admin.ModelAdmin):
     def get_urls(self):
         info = self.model._meta.app_label, self.model._meta.model_name
         return [
-            url(
-                r'^export_csv/$',
+            path(
+                'export_csv/',
                 self.admin_site.admin_view(self.export_to_csv),
                 name="{}_{}_export_csv".format(*info),
             ),
@@ -102,33 +103,41 @@ class ContentExpiryAdmin(admin.ModelAdmin):
     def get_rangefilter_expires_title(self, *args, **kwargs):
         return _("By Expiry Date Range")
 
+    @admin.display(
+        description=_('Title')
+    )
     def title(self, obj):
         """
         A field to display the content objects title
         """
         return obj.version.content
-    title.short_description = _('Title')
 
+    @admin.display(
+        description=_('Content type')
+    )
     def content_type(self, obj):
         """
         A field to display the content type as a readable representation
         """
         return obj.version.content_type
-    content_type.short_description = _('Content type')
 
+    @admin.display(
+        description=_('Version state')
+    )
     def version_state(self, obj):
         """
         A field to display the version state as a readable representation
         """
         return obj.version.get_state_display()
-    version_state.short_description = _('Version state')
 
+    @admin.display(
+        description=_('Version author')
+    )
     def version_author(self, obj):
         """
         A field to display the author of the version
         """
         return obj.version.created_by
-    version_author.short_description = _('Version author')
 
     def list_display_actions(self, request):
         """
@@ -285,8 +294,10 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             'list_max_show_all': self.list_max_show_all,
             'list_editable': self.list_editable,
             'model_admin': self,
-            'sortable_by': self.sortable_by
+            'sortable_by': self.sortable_by,
         }
+        if not DJANGO_3:
+            changelist_kwargs['search_help_text'] = self.search_help_text
         cl = changelist(**changelist_kwargs)
 
         return cl.get_queryset(request)
