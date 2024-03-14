@@ -9,10 +9,11 @@ from django.urls import path, reverse
 from django.utils.html import format_html_join
 from django.utils.translation import gettext_lazy as _
 
+from cms.utils.compat import DJANGO_4_2
+
 from djangocms_versioning.constants import DRAFT, PUBLISHED
 from djangocms_versioning.helpers import get_preview_url
 
-from .compat import DJANGO_4_2
 from .conf import DEFAULT_CONTENT_EXPIRY_EXPORT_DATE_FORMAT
 from .constants import CONTENT_EXPIRY_FIELDSETS
 from .filters import (
@@ -295,7 +296,7 @@ class ContentExpiryAdmin(admin.ModelAdmin):
             'model_admin': self,
             'sortable_by': self.sortable_by,
         }
-        if DJANGO_4_2:
+        if DJANGO_4_2 or DJANGO_4_1:
             changelist_kwargs['search_help_text'] = self.search_help_text
         cl = changelist(**changelist_kwargs)
 
